@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart City Command Center - Ratchaburi V6</title>
+    <title>Smart City Command Center - Ratchaburi V6.1</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -15,7 +15,7 @@
         .system-status { display: flex; align-items: center; gap: 15px; font-size: 13px; }
         .alert-ticker { background-color: #212529; color: #ffb703; font-size: 12px; padding: 6px 20px; border-bottom: 1px solid #343a40; display: flex; align-items: center; gap: 10px; font-weight: bold;}
         .marquee-container { flex: 1; overflow: hidden; white-space: nowrap; }
-        .marquee-content { display: inline-block; animation: marquee 20s linear infinite; }
+        .marquee-content { display: inline-block; animation: marquee 30s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
         /* Layout */
@@ -45,19 +45,18 @@
         .no-signal { background: #111; color: #e63946; font-weight: bold; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; height: 100%; justify-content: center;}
         
         /* Right: Status & Audio */
-        .right-zone { width: 340px; padding: 15px; display: flex; flex-direction: column; gap: 15px; background-color: #181b1f; border-left: 1px solid #343a40; flex-shrink: 0; overflow-y: auto;}
+        .right-zone { width: 340px; padding: 15px; display: flex; flex-direction: column; gap: 15px; background-color: #181b1f; border-left: 1px solid #343a40; flex-shrink: 0; overflow-y: hidden;}
         .status-card { background-color: #212529; border-radius: 8px; border: 1px solid #3d4349; padding: 15px; }
         .card-title { font-size: 14px; color: #0d6efd; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px;}
         
-        /* Sensor Grid */
         .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;}
         .sensor-item { background: #1a1d20; padding: 12px 10px; border-radius: 6px; text-align: center; border: 1px solid #343a40; }
         .sensor-val { font-size: 20px; font-weight: bold; color: #2ec4b6; margin-top: 5px;}
         .sensor-val.danger { color: #e63946; }
         
-        /* Audio Control */
-        .zone-selector { background-color: #1a1d20; padding: 10px; border-radius: 6px; border: 1px solid #3d4349; margin-bottom: 15px; max-height: 180px; overflow-y: auto;}
-        .zone-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #ced4da; margin-bottom: 8px; cursor: pointer;}
+        /* Audio Control with Scroll */
+        .zone-selector { background-color: #1a1d20; padding: 10px; border-radius: 6px; border: 1px solid #3d4349; margin-bottom: 15px; flex: 1; overflow-y: auto; display: flex; flex-direction: column;}
+        .zone-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #ced4da; margin-bottom: 8px; cursor: pointer; padding-left: 10px;}
         .btn-mic { background-color: #dc3545; color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 10px rgba(220,53,69,0.3);}
         .btn-mic:active { transform: scale(0.97); background-color: #a52834;}
         
@@ -67,30 +66,18 @@
         
         /* Beautiful Tables */
         .styled-table { width: 100%; border-collapse: collapse; background: #212529; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #3d4349;}
-        .styled-table thead tr { background-color: #2c3036; color: #0d6efd; text-align: left; }
-        .styled-table th, .styled-table td { padding: 12px 15px; border-bottom: 1px solid #343a40; font-size: 14px;}
+        .styled-table thead tr { background-color: #2c3036; color: #0d6efd; text-align: left; position: sticky; top: 0;}
+        .styled-table th, .styled-table td { padding: 10px 15px; border-bottom: 1px solid #343a40; font-size: 13px;}
         .styled-table tbody tr:hover { background-color: #2b3035; }
         
-        /* Badges & Toggles */
+        /* Badges */
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block;}
         .badge-ok { background: rgba(46, 196, 182, 0.15); color: #2ec4b6; border: 1px solid #2ec4b6;}
         .badge-warn { background: rgba(255, 183, 3, 0.15); color: #ffb703; border: 1px solid #ffb703;}
         .badge-err { background: rgba(230, 57, 70, 0.15); color: #e63946; border: 1px solid #e63946;}
-        
-        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #343a40; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #2ec4b6; }
-        input:checked + .slider:before { transform: translateX(14px); }
-
-        /* Stats Widgets */
-        .widget-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px;}
-        .widget-card { background: linear-gradient(145deg, #212529, #1a1d20); border: 1px solid #3d4349; padding: 20px; border-radius: 10px; text-align: center;}
-        .widget-val { font-size: 28px; font-weight: bold; color: #fff; margin: 10px 0;}
 
         /* Map Markers */
-        .data-marker { display: flex; justify-content: center; align-items: center; border-radius: 50%; color: #000; font-weight: bold; font-size: 12px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); width: 30px !important; height: 30px !important; margin-left: -15px !important; margin-top: -15px !important; }
+        .data-marker { display: flex; justify-content: center; align-items: center; border-radius: 50%; color: #000; font-weight: bold; font-size: 12px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); width: 26px !important; height: 26px !important; margin-left: -13px !important; margin-top: -13px !important; }
         .aqi-good { background-color: #2ec4b6; } .aqi-mod { background-color: #ffb703; } .aqi-bad { background-color: #fb8500; } .aqi-danger { background-color: #e63946; color: #fff;}
         .temp-marker { background-color: #4cc9f0; }
 
@@ -100,12 +87,12 @@
 <body>
 
   <header class="main-header">
-    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี V6</h2>
+    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City จังหวัดราชบุรี (ครอบคลุม 10 อำเภอ)</h2>
     <div class="system-status"><span id="clock">12:00:00</span> <span class="badge badge-ok">🟢 Server Online</span></div>
   </header>
 
   <div class="alert-ticker">
-      <span>🚨 ระบบแจ้งเตือนอัตโนมัติ:</span>
+      <span>🚨 AI Monitor:</span>
       <div class="marquee-container">
           <div class="marquee-content" id="alert-text">กำลังตรวจสอบสถานะเครือข่ายและสิ่งแวดล้อมทั่วจังหวัด...</div>
       </div>
@@ -124,7 +111,7 @@
             <div style="flex:1; position: relative; display: flex;">
                 <div class="map-layer-controls">
                     <div style="color:#adb5bd; font-size:11px; margin-bottom: 2px;">📊 ชั้นข้อมูลแผนที่:</div>
-                    <button class="layer-btn active" onclick="setLayer('status', this)">🔵 สถานะ Node</button>
+                    <button class="layer-btn active" onclick="setLayer('status', this)">🔵 สถานะ Node (42 จุด)</button>
                     <button class="layer-btn" onclick="setLayer('pm25', this)">😷 ฝุ่น PM2.5</button>
                     <button class="layer-btn" onclick="setLayer('temp', this)">🌡️ อุณหภูมิ</button>
                 </div>
@@ -133,7 +120,7 @@
             
             <div class="cctv-bottom-panel">
                 <div class="cctv-header">
-                    <span>📹 กล้องวงจรปิดเรียลไทม์ (WebRTC) <span id="cam-count-badge" class="badge badge-ok" style="margin-left:10px;">ตรวจพบ 0 ตัว</span></span>
+                    <span>📹 ระบบกล้องวงจรปิดเรียลไทม์ (WebRTC) <span id="cam-count-badge" class="badge badge-ok" style="margin-left:10px;">-</span></span>
                     <span id="ui-cam-title" style="color:#0d6efd;">คลิกเลือกโหนดบนแผนที่...</span>
                 </div>
                 <div class="cctv-grid" id="cctv-grid" style="grid-template-columns: repeat(4, 1fr);">
@@ -155,9 +142,10 @@
                 </div>
             </div>
             
-            <div class="status-card" style="flex:1; display:flex; flex-direction:column;">
-                <div class="card-title">📢 ควบคุมเสียงประกาศ (ทุกตำบล)</div>
-                <div class="zone-selector" id="zone-checkboxes"></div>
+            <div class="status-card" style="flex:1; display:flex; flex-direction:column; overflow: hidden;">
+                <div class="card-title">📢 ควบคุมเสียงประกาศ (42 โซน)</div>
+                <div class="zone-selector" id="zone-checkboxes">
+                    </div>
                 <button class="btn-mic" onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()">
                     <span id="mic-icon">🎙️</span> <span id="mic-text">กดค้างเพื่อพูด (PTT)</span>
                 </button>
@@ -165,45 +153,21 @@
         </section>
     </div>
 
-    <div id="page-audio" class="page-content">
-        <h2 class="page-title">🗓️ ตารางกระจายเสียงอัตโนมัติ (Scheduler)</h2>
-        <button style="margin-bottom: 15px; padding: 8px 15px; background: #0d6efd; color: #fff; border: none; border-radius: 4px; cursor: pointer;">+ เพิ่มตารางใหม่</button>
-        <table class="styled-table">
-            <thead>
-                <tr><th>เวลาทำงาน</th><th>รายการเสียง (MP3/WAV)</th><th>โซนเป้าหมาย</th><th>วันทำงาน</th><th>เปิด/ปิด</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>08:00 น.</td><td>🇹🇭 national_anthem.mp3</td><td>ทุกโซน (All Nodes)</td><td>ทุกวัน</td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
-                <tr><td>12:00 น.</td><td>⚠️ warning_covid.wav</td><td>อ.เมือง, อ.บ้านโป่ง</td><td>จันทร์ - ศุกร์</td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td></tr>
-                <tr><td>18:00 น.</td><td>🇹🇭 national_anthem.mp3</td><td>ทุกโซน (All Nodes)</td><td>ทุกวัน</td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div id="page-stats" class="page-content">
-        <h2 class="page-title">📊 สถิติภาพรวมสิ่งแวดล้อม (Dashboard)</h2>
-        <div class="widget-grid">
-            <div class="widget-card"><div style="color:#adb5bd; font-size:14px;">ค่าเฉลี่ยฝุ่น PM2.5 (ทั้งจังหวัด)</div><div class="widget-val" style="color:#ffb703;">32 <span style="font-size:14px;">µg/m³</span></div></div>
-            <div class="widget-card"><div style="color:#adb5bd; font-size:14px;">อุณหภูมิเฉลี่ยสูงสุดวันนี้</div><div class="widget-val" style="color:#e63946;">36°C</div></div>
-            <div class="widget-card"><div style="color:#adb5bd; font-size:14px;">Node ที่ใช้งานได้</div><div class="widget-val" style="color:#2ec4b6;">11 / 12</div></div>
-        </div>
-        <div style="background:#111417; border:1px dashed #3d4349; height: 350px; border-radius: 8px; display:flex; justify-content:center; align-items:center; color:#6c757d; flex-direction:column;">
-            <span style="font-size:40px;">📈</span>
-            <p style="margin-top:10px;">พื้นที่สำหรับเชื่อมต่อกราฟจาก InfluxDB / Grafana</p>
-        </div>
-    </div>
-
     <div id="page-devices" class="page-content">
-        <h2 class="page-title">⚙️ สถานะบอร์ดคอนโทรลและเครือข่าย (STM32H7)</h2>
-        <table class="styled-table" id="device-table">
-            <thead>
-                <tr><th>ชื่ออุปกรณ์ (Node)</th><th>IP Address</th><th>Ping (ms)</th><th>อุณหภูมิ / PM2.5</th><th>สถานะกล้อง</th><th>สถานะระบบ</th><th>Action</th></tr>
-            </thead>
-            <tbody id="device-tbody">
-                </tbody>
-        </table>
+        <h2 class="page-title">⚙️ ฐานข้อมูลบอร์ดคอนโทรลทั้งหมด (42 Nodes)</h2>
+        <div style="max-height: 80%; overflow-y: auto; border-radius: 8px;">
+            <table class="styled-table" id="device-table">
+                <thead>
+                    <tr><th>อำเภอ</th><th>จุดติดตั้ง (เทศบาล/ตำบล)</th><th>IP (VPN)</th><th>Ping</th><th>สภาพอากาศ</th><th>สถานะกล้อง</th><th>สถานะระบบ</th></tr>
+                </thead>
+                <tbody id="device-tbody">
+                    </tbody>
+            </table>
+        </div>
     </div>
-
+    
+    <div id="page-audio" class="page-content"><h2>🗓️ ระบบจัดการตารางเวลา...</h2></div>
+    <div id="page-stats" class="page-content"><h2>📊 กราฟสถิติ...</h2></div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -211,7 +175,6 @@
     const cloudflareUrl = "https://handbags-nitrogen-creator-appointment.trycloudflare.com";
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
 
-    // ฟังก์ชันสุ่ม Array
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -220,50 +183,83 @@
         return array;
     }
 
-    // ฐานข้อมูลเริ่มต้น
+    // 🌟 ฐานข้อมูลขนาดใหญ่ (42 Nodes) ครอบคลุม 10 อำเภอของจังหวัดราชบุรี
     const nodes = [
-        { id: '1', name: "ต.หน้าเมือง", dist: "เมือง", lat: 13.5350, lng: 99.8190, ip: "10.0.1.11", status: "ok", temp: 33, hum: 55, pm: 25 },
-        { id: '2', name: "ต.เจดีย์หัก", dist: "เมือง", lat: 13.5500, lng: 99.8100, ip: "10.0.1.12", status: "warn", temp: 34, hum: 52, pm: 42 },
-        { id: '3', name: "ต.ดอนตะโก", dist: "เมือง", lat: 13.5200, lng: 99.8000, ip: "10.0.1.13", status: "ok", temp: 32, hum: 60, pm: 22 },
-        { id: '4', name: "ต.เขาแร้ง", dist: "เมือง", lat: 13.5800, lng: 99.7500, ip: "10.0.1.14", status: "err", temp: "-", hum: "-", pm: "-" },
-        { id: '5', name: "ต.บ้านโป่ง", dist: "บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.2.11", status: "warn", temp: 35, hum: 50, pm: 58 },
-        { id: '6', name: "ต.ท่าผา", dist: "บ้านโป่ง", lat: 13.8300, lng: 99.8600, ip: "10.0.2.12", status: "ok", temp: 34, hum: 52, pm: 28 },
-        { id: '7', name: "ต.จอมบึง", dist: "จอมบึง", lat: 13.6210, lng: 99.5930, ip: "10.0.3.11", status: "ok", temp: 31, hum: 60, pm: 15 },
-        { id: '8', name: "ต.ด่านทับตะโก", dist: "จอมบึง", lat: 13.6600, lng: 99.5000, ip: "10.0.3.12", status: "warn", temp: 30, hum: 62, pm: 18 },
-        { id: '9', name: "ต.สวนผึ้ง", dist: "สวนผึ้ง", lat: 13.5410, lng: 99.3080, ip: "10.0.4.11", status: "ok", temp: 28, hum: 75, pm: 10 },
-        { id: '10', name: "ต.ป่าหวาย", dist: "สวนผึ้ง", lat: 13.5000, lng: 99.4000, ip: "10.0.4.12", status: "err", temp: "-", hum: "-", pm: "-" },
-        { id: '11', name: "ต.ดำเนินสะดวก", dist: "ดำเนินฯ", lat: 13.5180, lng: 99.9320, ip: "10.0.5.11", status: "ok", temp: 34, hum: 65, pm: 22 },
-        { id: '12', name: "ต.โพธาราม", dist: "โพธาราม", lat: 13.6930, lng: 99.8490, ip: "10.0.6.11", status: "ok", temp: 33, hum: 55, pm: 30 }
+        // อ.เมืองราชบุรี
+        { id: '1', name: "ทม.ราชบุรี", dist: "เมือง", lat: 13.5350, lng: 99.8190, ip: "10.0.1.10", status: "ok", temp: 34, hum: 55, pm: 25 },
+        { id: '2', name: "ต.หน้าเมือง", dist: "เมือง", lat: 13.5400, lng: 99.8250, ip: "10.0.1.11", status: "ok", temp: 33, hum: 58, pm: 28 },
+        { id: '3', name: "ต.เจดีย์หัก", dist: "เมือง", lat: 13.5550, lng: 99.8100, ip: "10.0.1.12", status: "warn", temp: 35, hum: 52, pm: 42 },
+        { id: '4', name: "ต.ดอนตะโก", dist: "เมือง", lat: 13.5200, lng: 99.8000, ip: "10.0.1.13", status: "ok", temp: 32, hum: 60, pm: 22 },
+        { id: '5', name: "ต.โคกหม้อ", dist: "เมือง", lat: 13.5600, lng: 99.8300, ip: "10.0.1.14", status: "err", temp: "-", hum: "-", pm: "-" },
+        { id: '6', name: "ต.พงสวาย", dist: "เมือง", lat: 13.5450, lng: 99.8350, ip: "10.0.1.15", status: "ok", temp: 33, hum: 55, pm: 24 },
+        
+        // อ.บ้านโป่ง
+        { id: '7', name: "ทม.บ้านโป่ง", dist: "บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.2.10", status: "warn", temp: 35, hum: 50, pm: 55 },
+        { id: '8', name: "ต.ท่าผา", dist: "บ้านโป่ง", lat: 13.8300, lng: 99.8600, ip: "10.0.2.11", status: "ok", temp: 34, hum: 52, pm: 28 },
+        { id: '9', name: "ต.เบิกไพร", dist: "บ้านโป่ง", lat: 13.8200, lng: 99.8500, ip: "10.0.2.12", status: "ok", temp: 34, hum: 54, pm: 30 },
+        { id: '10', name: "ต.หนองอ้อ", dist: "บ้านโป่ง", lat: 13.7900, lng: 99.8800, ip: "10.0.2.13", status: "ok", temp: 35, hum: 51, pm: 35 },
+        { id: '11', name: "ต.กรับใหญ่", dist: "บ้านโป่ง", lat: 13.8800, lng: 99.8100, ip: "10.0.2.14", status: "ok", temp: 33, hum: 56, pm: 20 },
+
+        // อ.โพธาราม
+        { id: '12', name: "ทม.โพธาราม", dist: "โพธาราม", lat: 13.6930, lng: 99.8490, ip: "10.0.3.10", status: "ok", temp: 33, hum: 55, pm: 30 },
+        { id: '13', name: "ต.เจ็ดเสมียน", dist: "โพธาราม", lat: 13.6500, lng: 99.8300, ip: "10.0.3.11", status: "ok", temp: 33, hum: 58, pm: 25 },
+        { id: '14', name: "ต.คลองตาคต", dist: "โพธาราม", lat: 13.7050, lng: 99.8550, ip: "10.0.3.12", status: "warn", temp: 34, hum: 54, pm: 45 },
+        { id: '15', name: "ต.บ้านสิงห์", dist: "โพธาราม", lat: 13.6800, lng: 99.8800, ip: "10.0.3.13", status: "err", temp: "-", hum: "-", pm: "-" },
+        
+        // อ.ดำเนินสะดวก
+        { id: '16', name: "ต.ดำเนินสะดวก", dist: "ดำเนินฯ", lat: 13.5180, lng: 99.9320, ip: "10.0.4.10", status: "ok", temp: 34, hum: 65, pm: 22 },
+        { id: '17', name: "ต.ศรีสุราษฎร์", dist: "ดำเนินฯ", lat: 13.4900, lng: 99.9400, ip: "10.0.4.11", status: "ok", temp: 33, hum: 68, pm: 20 },
+        { id: '18', name: "ต.แพงพวย", dist: "ดำเนินฯ", lat: 13.5300, lng: 99.9500, ip: "10.0.4.12", status: "warn", temp: 35, hum: 62, pm: 38 },
+        { id: '19', name: "ต.บัวงาม", dist: "ดำเนินฯ", lat: 13.4800, lng: 99.9100, ip: "10.0.4.13", status: "ok", temp: 33, hum: 64, pm: 24 },
+
+        // อ.จอมบึง
+        { id: '20', name: "ทต.จอมบึง", dist: "จอมบึง", lat: 13.6210, lng: 99.5930, ip: "10.0.5.10", status: "ok", temp: 31, hum: 60, pm: 15 },
+        { id: '21', name: "ต.ด่านทับตะโก", dist: "จอมบึง", lat: 13.6600, lng: 99.5000, ip: "10.0.5.11", status: "warn", temp: 30, hum: 62, pm: 18 },
+        { id: '22', name: "ต.ปากช่อง", dist: "จอมบึง", lat: 13.6400, lng: 99.4500, ip: "10.0.5.12", status: "ok", temp: 29, hum: 65, pm: 12 },
+
+        // อ.สวนผึ้ง
+        { id: '23', name: "ต.สวนผึ้ง", dist: "สวนผึ้ง", lat: 13.5410, lng: 99.3080, ip: "10.0.6.10", status: "ok", temp: 28, hum: 75, pm: 10 },
+        { id: '24', name: "ต.ป่าหวาย", dist: "สวนผึ้ง", lat: 13.5000, lng: 99.4000, ip: "10.0.6.11", status: "err", temp: "-", hum: "-", pm: "-" },
+        { id: '25', name: "ต.ท่าเคย", dist: "สวนผึ้ง", lat: 13.4800, lng: 99.3500, ip: "10.0.6.12", status: "ok", temp: 29, hum: 70, pm: 14 },
+
+        // อ.บางแพ
+        { id: '26', name: "ต.บางแพ", dist: "บางแพ", lat: 13.6930, lng: 99.9320, ip: "10.0.7.10", status: "ok", temp: 33, hum: 55, pm: 30 },
+        { id: '27', name: "ต.วังเย็น", dist: "บางแพ", lat: 13.7200, lng: 99.9200, ip: "10.0.7.11", status: "warn", temp: 34, hum: 53, pm: 40 },
+
+        // อ.ปากท่อ
+        { id: '28', name: "ทต.ปากท่อ", dist: "ปากท่อ", lat: 13.3720, lng: 99.8430, ip: "10.0.8.10", status: "ok", temp: 32, hum: 58, pm: 18 },
+        { id: '29', name: "ต.ทุ่งหลวง", dist: "ปากท่อ", lat: 13.3000, lng: 99.7800, ip: "10.0.8.11", status: "warn", temp: 33, hum: 55, pm: 35 },
+        { id: '30', name: "ต.วัดยางงาม", dist: "ปากท่อ", lat: 13.3900, lng: 99.8600, ip: "10.0.8.12", status: "err", temp: "-", hum: "-", pm: "-" },
+
+        // อ.วัดเพลง
+        { id: '31', name: "ต.วัดเพลง", dist: "วัดเพลง", lat: 13.4380, lng: 99.8890, ip: "10.0.9.10", status: "ok", temp: 33, hum: 60, pm: 21 },
+        { id: '32', name: "ต.เกาะศาลพระ", dist: "วัดเพลง", lat: 13.4200, lng: 99.8700, ip: "10.0.9.11", status: "ok", temp: 32, hum: 62, pm: 19 },
+
+        // อ.บ้านคา
+        { id: '33', name: "ต.บ้านคา", dist: "บ้านคา", lat: 13.4210, lng: 99.4210, ip: "10.0.10.10", status: "ok", temp: 29, hum: 70, pm: 12 },
+        { id: '34', name: "ต.บ้านบึง", dist: "บ้านคา", lat: 13.4500, lng: 99.4500, ip: "10.0.10.11", status: "warn", temp: 30, hum: 68, pm: 25 }
     ];
 
-    // ** ความฉลาด V6: สุ่มจำนวนกล้อง (1-4 ตัว) และสถานะดี/เสีย **
     let alertMessages = [];
     nodes.forEach(node => {
-        let totalCams = Math.floor(Math.random() * 4) + 1; // สุ่มโหนดนี้มีกล้องกี่ตัว (1 ถึง 4)
+        // สุ่มโหนดมีกล้องกี่ตัว 1-4 (สมจริง)
+        let totalCams = Math.floor(Math.random() * 4) + 1; 
         node.cams = [];
         let brokenCount = 0;
         
         for(let i=0; i<totalCams; i++) {
-            // โหนดพัง (err) กล้องดับหมด / ถ้าไม่พัง สุ่มโอกาสกล้องเสีย 20%
-            let isOk = (node.status === 'err') ? 0 : (Math.random() > 0.2 ? 1 : 0);
+            let isOk = (node.status === 'err') ? 0 : (Math.random() > 0.15 ? 1 : 0);
             node.cams.push(isOk);
             if(!isOk) brokenCount++;
         }
-        node.camSources = shuffleArray([1, 2, 3, 4]); // สลับ Source กล้อง
+        node.camSources = shuffleArray([1, 2, 3, 4]);
         
-        // สร้างข้อความแจ้งเตือนอัตโนมัติ
-        if(node.status === 'err') alertMessages.push(`⚠️ ${node.name} ออฟไลน์/ไฟดับ`);
-        if(node.pm > 50) alertMessages.push(`😷 ฝุ่น PM2.5 ${node.name} เกินมาตรฐาน (${node.pm} µg/m³)`);
-        if(node.status !== 'err' && brokenCount > 0) alertMessages.push(`📹 กล้อง ${node.name} สัญญาณขาดหาย ${brokenCount} ตัว`);
+        if(node.status === 'err') alertMessages.push(`⚠️ ${node.name} อ. ${node.dist} ขาดการติดต่อ (ออฟไลน์)`);
+        if(node.pm > 50) alertMessages.push(`😷 แจ้งเตือนฝุ่น: ${node.name} (${node.pm} µg/m³)`);
+        if(node.status !== 'err' && brokenCount > 0) alertMessages.push(`📹 ระบบภาพ: ${node.name} ขัดข้อง ${brokenCount} กล้อง`);
     });
 
-    // อัปเดต Ticker
-    if(alertMessages.length > 0) {
-        document.getElementById('alert-text').innerText = alertMessages.join('   |   ');
-    } else {
-        document.getElementById('alert-text').innerText = "🟢 สถานะปกติทุกจุด ไม่มีข้อผิดพลาดในระบบ";
-        document.getElementById('alert-text').style.color = "#2ec4b6";
-    }
+    if(alertMessages.length > 0) document.getElementById('alert-text').innerText = alertMessages.join('   |   ');
 
     var map = L.map('map').setView([13.6, 99.7], 10);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
@@ -282,23 +278,22 @@
         } else if(type === 'pm25') {
             let colorClass = node.status === 'err' ? 'aqi-bad' : (node.pm<=37?'aqi-good':(node.pm<=50?'aqi-mod':'aqi-danger'));
             htmlContent = `<div class="data-marker ${colorClass}">${node.pm}</div>`;
-            return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [30, 30], iconAnchor: [15, 15] });
+            return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [26, 26], iconAnchor: [13, 13] });
         } else {
             let tempShow = node.status === 'err' ? '-' : `${node.temp}°`;
             htmlContent = `<div class="data-marker temp-marker" style="${node.status==='err'?'background:#6c757d;':''}">${tempShow}</div>`;
-            return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [30, 30], iconAnchor: [15, 15] });
+            return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [26, 26], iconAnchor: [13, 13] });
         }
     }
 
-    // อัปเดต UI เมื่อคลิกหมุด
+    // ฟังก์ชันจัดหน้ากล้องอัตโนมัติตามจำนวน (1-4)
     function updateDashboardUI(node) {
-        // 1. จัดการเฟรมกล้องให้พอดีจำนวนกล้องที่มี
-        document.getElementById('ui-cam-title').innerText = `📍 โหนด: ${node.name} (อ.${node.dist})`;
+        document.getElementById('ui-cam-title').innerText = `📍 ${node.name} (อ.${node.dist})`;
         document.getElementById('cam-count-badge').innerText = `มีกล้อง ${node.cams.length} ตัว`;
         
         cctvGrid.innerHTML = "";
-        // ** ความฉลาด: เปลี่ยนจำนวนคอลัมน์ตามจำนวนกล้อง **
-        let cols = node.cams.length <= 2 ? node.cams.length : (node.cams.length === 3 ? 3 : 4);
+        // กำหนด Layout Grid อัตโนมัติ (1 จอใหญ่, 2 จอแบ่งครึ่ง, 3-4 จอเรียงกัน)
+        let cols = node.cams.length === 1 ? 1 : (node.cams.length === 2 ? 2 : (node.cams.length === 3 ? 3 : 4));
         cctvGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
         node.cams.forEach((camStatus, i) => {
@@ -307,8 +302,7 @@
                 cctvGrid.innerHTML += `
                     <div class="camera-box">
                         <span class="cam-tag">CAM 0${i+1}</span><span class="live-dot"></span>
-                        <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
-                            src="${cloudflareUrl}/stream.html?src=cam${streamIndex}&mode=webrtc"></iframe>
+                        <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="${cloudflareUrl}/stream.html?src=cam${streamIndex}&mode=webrtc"></iframe>
                     </div>`;
             } else { 
                 cctvGrid.innerHTML += `
@@ -319,13 +313,11 @@
             }
         });
 
-        // 2. อัปเดตข้อมูลขวามือ
-        document.getElementById('ui-node-name').innerText = `📍 ${node.name}`;
+        document.getElementById('ui-node-name').innerText = `📍 ${node.name} (อ.${node.dist})`;
         document.getElementById('ui-vpn-ip').innerText = `IP: ${node.ip}  |  Ping: ${node.status === 'err' ? 'Timeout' : Math.floor(Math.random()*10+10)+' ms'}`;
         
-        let statusHtml = node.status === 'ok' ? `<span class="badge badge-ok">🟢 ปกติ</span>` : (node.status === 'warn' ? `<span class="badge badge-warn">🟡 มีอุปกรณ์ขัดข้อง</span>` : `<span class="badge badge-err">🔴 ออฟไลน์</span>`);
-        document.getElementById('ui-node-status').innerHTML = `สถานะระบบ: ${statusHtml}`;
-        
+        let statusHtml = node.status === 'ok' ? `<span class="badge badge-ok">🟢 ระบบปกติ</span>` : (node.status === 'warn' ? `<span class="badge badge-warn">🟡 กล้องขัดข้อง</span>` : `<span class="badge badge-err">🔴 Node ดับ</span>`);
+        document.getElementById('ui-node-status').innerHTML = `สถานะ: ${statusHtml}`;
         document.getElementById('ui-temp').innerText = node.status === 'err' ? "--°C" : `${node.temp}°C`;
         document.getElementById('ui-hum').innerText = node.status === 'err' ? "--%" : `${node.hum}%`;
         
@@ -338,19 +330,31 @@
     nodes.forEach(node => {
         var marker = L.marker([node.lat, node.lng], {icon: createIcon(node, 'status')}).addTo(map);
         markerStore[node.id] = { marker: marker, data: node };
-
         marker.on('click', () => updateDashboardUI(node));
 
+        // 🌟 Smart Checkbox Grouping (สร้างปุ่มเลือกทั้งอำเภอ)
         if(currentDistrict !== node.dist) {
-            zoneContainer.innerHTML += `<div style="color:#0d6efd; font-size:12px; margin: 10px 0 5px 0; border-bottom: 1px solid #343a40; font-weight:bold;">อ.${node.dist}</div>`;
+            zoneContainer.innerHTML += `
+                <div style="color:#0d6efd; font-size:13px; margin: 15px 0 8px 0; border-bottom: 1px solid #343a40; font-weight:bold; display:flex; justify-content:space-between; padding-right:10px;">
+                    <span>อ.${node.dist}</span>
+                    <label style="font-size:11px; cursor:pointer; color:#adb5bd;"><input type="checkbox" checked onchange="toggleDistrict('${node.dist}', this.checked)"> เลือกทั้งหมด</label>
+                </div>`;
             currentDistrict = node.dist;
         }
+        
         let isChecked = (node.status !== 'err') ? "checked" : "disabled"; 
         let labelColor = (node.status === 'err') ? "#6c757d" : "#ced4da";
-        zoneContainer.innerHTML += `<label class="zone-label" style="color:${labelColor}"><input type="checkbox" class="zone-cb" value="${node.id}" ${isChecked}> ${node.name}</label>`;
+        zoneContainer.innerHTML += `<label class="zone-label" style="color:${labelColor}"><input type="checkbox" class="zone-cb dist-${node.dist}" value="${node.id}" ${isChecked}> ${node.name}</label>`;
     });
 
     updateDashboardUI(nodes[0]); 
+
+    // ฟังก์ชันเลือก/ยกเลิก ทั้งอำเภอ
+    function toggleDistrict(dist, isChecked) {
+        document.querySelectorAll(`.dist-${dist}`).forEach(cb => {
+            if(!cb.disabled) cb.checked = isChecked;
+        });
+    }
 
     function setLayer(type, btn) {
         document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
@@ -359,7 +363,7 @@
         Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, type)); });
     }
 
-    // ฟังก์ชันสร้างตาราง Device Management อัตโนมัติจากข้อมูลแผนที่ (Smart Feature)
+    // ฟังก์ชันสร้างตาราง Device Management (โหลดทั้ง 42 จุดลงตาราง)
     function renderDeviceTable() {
         const tbody = document.getElementById('device-tbody');
         tbody.innerHTML = "";
@@ -368,21 +372,34 @@
             let sensors = n.status === 'err' ? '-' : `${n.temp}°C / <span style="color:${n.pm>50?'#e63946':'#ced4da'}">${n.pm} µg</span>`;
             
             let brokenCams = n.cams.filter(c => c === 0).length;
-            let camStatus = n.status === 'err' ? '<span class="badge badge-err">ดับทั้งหมด</span>' : (brokenCams > 0 ? `<span class="badge badge-warn">เสีย ${brokenCams} ตัว</span>` : `<span class="badge badge-ok">${n.cams.length} ตัว ปกติ</span>`);
-            
+            let camStatus = n.status === 'err' ? '<span class="badge badge-err">ดับทั้งหมด</span>' : (brokenCams > 0 ? `<span class="badge badge-warn">เสีย ${brokenCams} กล้อง</span>` : `<span class="badge badge-ok">กล้อง ${n.cams.length} ตัว ปกติ</span>`);
             let sysStatus = n.status === 'ok' ? '<span class="badge badge-ok">ออนไลน์</span>' : (n.status === 'warn' ? '<span class="badge badge-warn">แจ้งเตือน</span>' : '<span class="badge badge-err">ออฟไลน์</span>');
             
             tbody.innerHTML += `
                 <tr>
+                    <td>อ.${n.dist}</td>
                     <td style="font-weight:bold;">${n.name}</td>
                     <td style="font-family:monospace; color:#adb5bd;">${n.ip}</td>
                     <td>${ping}</td>
                     <td>${sensors}</td>
                     <td>${camStatus}</td>
                     <td>${sysStatus}</td>
-                    <td><button style="padding:4px 8px; background:#343a40; color:#fff; border:none; border-radius:4px; cursor:pointer;">Reboot</button></td>
                 </tr>`;
         });
+    }
+
+    const speakingIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#dc3545; width:22px; height:22px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-size:12px; animation: soundwave 1s infinite;'>📢</div>", iconSize: [22, 22], iconAnchor: [11, 11] });
+    function startSpeak() {
+        document.querySelector('.btn-mic').style.backgroundColor = "#ffc107"; 
+        document.querySelector('.btn-mic').style.color = "#000";
+        document.getElementById('mic-text').innerText = "🔴 กำลังกระจายเสียง...";
+        document.querySelectorAll('.zone-cb').forEach(cb => { if(cb.checked && !cb.disabled) markerStore[cb.value].marker.setIcon(speakingIcon); });
+    }
+    function stopSpeak() {
+        document.querySelector('.btn-mic').style.backgroundColor = "#dc3545"; 
+        document.querySelector('.btn-mic').style.color = "#fff";
+        document.getElementById('mic-text').innerText = "กดค้างเพื่อพูด (PTT)";
+        Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, currentLayer)); });
     }
 
     function switchPage(pageId, btn, callback) {
@@ -397,7 +414,7 @@
             document.getElementById('page-' + pageId).style.display = 'block';
         }
         btn.classList.add('active');
-        if(callback) callback(); // รันฟังก์ชันพิเศษเมื่อเปิดหน้านั้นๆ (เช่น สร้างตาราง)
+        if(callback) callback(); 
     }
   </script>
 </body>
