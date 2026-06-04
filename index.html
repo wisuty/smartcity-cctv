@@ -1,674 +1,324 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart City — CCTV Live</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg:        #04080f;
-    --surface:   #080f1a;
-    --card:      #0c1525;
-    --border:    #132240;
-    --border2:   #1e3a6e;
-    --accent:    #00d4ff;
-    --accent2:   #00ff9d;
-    --danger:    #ff3355;
-    --warn:      #ffaa00;
-    --text:      #b8d4f0;
-    --muted:     #3d6080;
-    --font-hd:   'Orbitron', monospace;
-    --font-mono: 'IBM Plex Mono', monospace;
-    --font-ui:   'IBM Plex Sans Thai', sans-serif;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart City Command Center - Ratchaburi</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #1a1d20; color: #e9ecef; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Header */
+        .main-header { background-color: #111417; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d6efd; height: 60px; }
+        .main-header h2 { font-size: 18px; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 10px; }
+        .system-status { display: flex; align-items: center; gap: 15px; font-size: 13px; }
+        .status-green { color: #2ec4b6; font-weight: bold; background: rgba(46, 196, 182, 0.1); padding: 5px 10px; border-radius: 20px;}
+        
+        /* Layout */
+        .main-layout { display: flex; flex: 1; height: calc(100vh - 60px); }
+        .sidebar-menu { width: 220px; background-color: #181b1f; border-right: 1px solid #343a40; padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;}
+        .center-zone { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+        .right-zone { width: 380px; padding: 15px; display: flex; flex-direction: column; gap: 15px; background-color: #1a1d20; border-left: 1px solid #343a40; flex-shrink: 0; overflow-y: auto;}
+        
+        /* Menu */
+        .menu-item { background: none; border: none; color: #adb5bd; padding: 12px 10px; text-align: left; font-size: 14px; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .menu-item:hover { background-color: #2c3036; color: #ffffff; }
+        .menu-item.active { background-color: #0d6efd; color: #ffffff; font-weight: bold; }
+        
+        /* Map & Layers */
+        #map { flex: 1; width: 100%; background-color: #2b3035; z-index: 1;}
+        .map-layer-controls { position: absolute; top: 15px; left: 50px; z-index: 1000; display: flex; gap: 10px; background: rgba(24,27,31,0.8); padding: 8px; border-radius: 8px; backdrop-filter: blur(4px); border: 1px solid #343a40;}
+        .layer-btn { background: #212529; color: #adb5bd; border: 1px solid #3d4349; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: 0.2s;}
+        .layer-btn.active { background: #0d6efd; color: #fff; font-weight: bold; border-color: #0d6efd;}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* Data Markers */
+        .data-marker { display: flex; justify-content: center; align-items: center; border-radius: 50%; color: #000; font-weight: bold; font-size: 12px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); width: 30px !important; height: 30px !important; margin-left: -15px !important; margin-top: -15px !important; }
+        .aqi-good { background-color: #2ec4b6; } .aqi-mod { background-color: #ffb703; } .aqi-bad { background-color: #fb8500; } .aqi-danger { background-color: #e63946; color: #fff;}
+        .temp-marker { background-color: #4cc9f0; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-ui);
-    min-height: 100vh;
-    overflow: hidden;
-  }
+        /* Popup */
+        .leaflet-popup-content-wrapper { background-color: #212529; color: #e9ecef; border: 1px solid #3d4349; border-radius: 8px; }
+        .leaflet-popup-tip { background-color: #212529; }
+        .popup-custom { font-family: 'Segoe UI', sans-serif; font-size: 14px; }
+        .popup-custom h4 { color: #0d6efd; margin-bottom: 8px; border-bottom: 1px solid #3d4349; padding-bottom: 5px;}
+        .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .popup-item { background: #1a1d20; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #343a40; }
+        
+        /* CCTV */
+        .cctv-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 140px 140px; gap: 10px; }
+        .camera-box { background-color: #000; border-radius: 6px; border: 1px solid #343a40; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;}
+        /* เปลี่ยน CSS ของกล้องให้รองรับ Iframe */
+        .cam-feed { width: 100%; height: 100%; object-fit: cover; border: none; }
+        .cam-tag { position: absolute; top: 5px; left: 5px; background-color: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #fff; z-index: 2; pointer-events: none;}
+        .live-dot { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; background-color: #e63946; border-radius: 50%; animation: blink 1s infinite; z-index: 2; pointer-events: none;}
+        
+        /* Audio Control */
+        .audio-control-panel { background-color: #212529; padding: 15px; border-radius: 8px; border: 1px solid #343a40; }
+        .zone-selector { background-color: #181b1f; padding: 10px; border-radius: 6px; border: 1px solid #3d4349; margin-bottom: 15px; max-height: 150px; overflow-y: auto;}
+        .zone-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #ced4da; margin-bottom: 8px; cursor: pointer;}
+        .btn-mic { background-color: #dc3545; color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px;}
+        .btn-mic:active { transform: scale(0.97); background-color: #a52834;}
+        
+        /* Pages & Tables */
+        .page-content { display: none; padding: 25px; background-color: #1a1d20; overflow-y: auto; flex: 1;}
+        .page-title { color: #0d6efd; margin-bottom: 20px; font-size: 20px; display: flex; align-items: center; gap: 10px;}
+        .data-table { width: 100%; border-collapse: collapse; background: #212529; border-radius: 8px; overflow: hidden; border: 1px solid #343a40;}
+        .data-table th { background: #2c3036; padding: 12px; text-align: left; color: #adb5bd; font-size: 14px;}
+        .data-table td { padding: 12px; border-top: 1px solid #343a40; font-size: 14px;}
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;}
+        .badge-online { background: rgba(46, 196, 182, 0.2); color: #2ec4b6; border: 1px solid #2ec4b6;}
+        .badge-offline { background: rgba(230, 57, 70, 0.2); color: #e63946; border: 1px solid #e63946;}
 
-  /* ── scanline ── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px);
-    pointer-events: none; z-index: 9999;
-  }
+        /* Video Wall Grid */
+        .video-wall { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .video-wall .camera-box { height: 220px; }
 
-  /* ── scan bar ── */
-  .scanbar {
-    position: fixed; left: 0; right: 0; height: 100px; z-index: 9998; pointer-events: none;
-    background: linear-gradient(180deg, transparent, rgba(0,212,255,0.025), transparent);
-    animation: scanmove 8s linear infinite;
-  }
-  @keyframes scanmove { from { top: -100px; } to { top: 100vh; } }
-
-  /* ── HEADER ── */
-  header {
-    height: 52px;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 20px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    position: relative; z-index: 100;
-  }
-  header::after {
-    content: '';
-    position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), var(--accent), transparent);
-    opacity: 0.4;
-  }
-
-  .logo {
-    display: flex; align-items: center; gap: 14px;
-  }
-  .logo-mark {
-    width: 32px; height: 32px; position: relative; flex-shrink: 0;
-  }
-  .logo-mark svg { width: 100%; height: 100%; }
-  .logo-text {
-    display: flex; flex-direction: column; gap: 1px;
-  }
-  .logo-text .l1 {
-    font-family: var(--font-hd);
-    font-size: 13px; font-weight: 700;
-    letter-spacing: 4px; color: #fff;
-    line-height: 1;
-  }
-  .logo-text .l2 {
-    font-family: var(--font-mono);
-    font-size: 9px; color: var(--muted);
-    letter-spacing: 3px; line-height: 1;
-  }
-
-  .header-mid {
-    position: absolute; left: 50%; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-  }
-  .cf-url {
-    font-family: var(--font-mono); font-size: 10px; color: var(--accent);
-    letter-spacing: 0.5px;
-  }
-  .cf-sub { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
-
-  .header-right {
-    display: flex; align-items: center; gap: 16px;
-  }
-  .pill {
-    display: flex; align-items: center; gap: 6px;
-    border: 1px solid; border-radius: 20px;
-    padding: 4px 10px; font-family: var(--font-mono); font-size: 10px;
-    letter-spacing: 0.5px;
-  }
-  .pill-green { border-color: var(--accent2); color: var(--accent2); }
-  .pill-blue  { border-color: var(--accent);  color: var(--accent); }
-  .pill-red   { border-color: var(--danger);  color: var(--danger); }
-  .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .dot-green { background: var(--accent2); box-shadow: 0 0 5px var(--accent2); animation: blink 2s infinite; }
-  .dot-red   { background: var(--danger);  box-shadow: 0 0 5px var(--danger);  animation: blink 1s infinite; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-  .clock-display {
-    font-family: var(--font-hd); font-size: 14px; font-weight: 600;
-    color: var(--accent); letter-spacing: 2px;
-    text-shadow: 0 0 12px rgba(0,212,255,0.5);
-  }
-
-  /* ── MAIN ── */
-  .main {
-    display: grid;
-    grid-template-columns: 180px 1fr 170px;
-    height: calc(100vh - 52px - 24px);
-    gap: 0;
-  }
-
-  /* ── SIDEBAR LEFT ── */
-  .sl {
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    padding: 12px 10px;
-    display: flex; flex-direction: column; gap: 12px;
-    overflow-y: auto;
-  }
-  .sec-label {
-    font-family: var(--font-mono); font-size: 9px; letter-spacing: 3px;
-    color: var(--muted); text-transform: uppercase; margin-bottom: 6px;
-  }
-  .info-block {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 6px; padding: 8px 10px;
-  }
-  .info-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 3px 0; font-size: 11px;
-    border-bottom: 1px solid rgba(19,34,64,0.7);
-  }
-  .info-row:last-child { border-bottom: none; }
-  .ir-k { color: var(--muted); font-family: var(--font-mono); font-size: 10px; }
-  .ir-v { color: var(--accent); font-family: var(--font-mono); font-size: 10px; }
-  .ir-v.g { color: var(--accent2); }
-
-  /* cam list */
-  .cam-list { display: flex; flex-direction: column; gap: 5px; }
-  .cam-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 7px 8px;
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 5px; cursor: pointer;
-    transition: border-color .2s, background .2s;
-  }
-  .cam-item:hover { border-color: var(--accent); background: rgba(0,212,255,0.04); }
-  .cam-icon {
-    width: 32px; height: 24px; background: #000;
-    border-radius: 3px; display: flex; align-items: center;
-    justify-content: center; font-size: 11px; flex-shrink: 0;
-    border: 1px solid var(--border);
-  }
-  .cam-info { flex: 1; min-width: 0; }
-  .cam-name { font-size: 12px; font-weight: 600; color: #fff; line-height: 1; }
-  .cam-ip { font-size: 9px; color: var(--muted); font-family: var(--font-mono); margin-top: 2px; }
-  .cam-st { display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--accent2); margin-top: 2px; }
-
-  /* sensors */
-  .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-  .scard {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 5px; padding: 7px; text-align: center;
-  }
-  .sval { font-family: var(--font-hd); font-size: 16px; font-weight: 700; line-height: 1; }
-  .sval.blue  { color: var(--accent); text-shadow: 0 0 8px rgba(0,212,255,.4); }
-  .sval.green { color: var(--accent2); text-shadow: 0 0 8px rgba(0,255,157,.4); }
-  .sval.warn  { color: var(--warn); }
-  .sval.dim   { color: #667; }
-  .sunit  { font-size: 9px; color: var(--muted); margin-top: 2px; font-family: var(--font-mono); }
-  .slabel { font-size: 9px; color: var(--muted); margin-top: 3px; letter-spacing: 1px; }
-
-  /* ── CAMERA GRID ── */
-  .cam-area {
-    background: #020609;
-    display: flex; flex-direction: column; overflow: hidden;
-  }
-  .toolbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 6px 14px;
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .view-btns { display: flex; gap: 5px; }
-  .vbtn {
-    padding: 3px 12px; font-size: 11px; letter-spacing: 1px;
-    border: 1px solid var(--border); border-radius: 3px;
-    background: transparent; color: var(--muted);
-    cursor: pointer; font-family: var(--font-mono);
-    transition: all .2s;
-  }
-  .vbtn.active, .vbtn:hover {
-    border-color: var(--accent); color: var(--accent);
-    background: rgba(0,212,255,0.07);
-  }
-  .rec-pill {
-    display: flex; align-items: center; gap: 5px;
-    font-family: var(--font-mono); font-size: 10px; color: var(--danger);
-  }
-
-  .grid {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px; padding: 2px;
-  }
-
-  /* ── CAMERA CELL ── */
-  .cell {
-    position: relative; background: #000;
-    border: 1px solid var(--border); border-radius: 4px;
-    overflow: hidden; transition: border-color .2s;
-  }
-  .cell:hover { border-color: var(--accent2); }
-
-  /* go2rtc iframe embed */
-  .cell iframe {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    border: none; background: #000;
-  }
-
-  /* loading placeholder shown before iframe loads */
-  .cell-loader {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 8px;
-    background: #000; z-index: 2;
-    transition: opacity .5s;
-  }
-  .cell-loader.hidden { opacity: 0; pointer-events: none; }
-  .loader-ring {
-    width: 32px; height: 32px; border-radius: 50%;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loader-text { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-align: center; line-height: 1.6; }
-
-  /* HUD overlay */
-  .hud {
-    position: absolute; inset: 0; pointer-events: none; z-index: 3;
-    display: flex; flex-direction: column; justify-content: space-between;
-  }
-  .hud-top {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    padding: 7px 8px;
-  }
-  .hud-label {
-    background: rgba(0,0,0,0.72); border: 1px solid rgba(0,212,255,0.2);
-    border-radius: 3px; padding: 3px 8px;
-    font-family: var(--font-mono); font-size: 10px; color: #e0f0ff;
-    backdrop-filter: blur(4px); letter-spacing: 1px;
-  }
-  .hud-rec {
-    display: flex; align-items: center; gap: 4px;
-    background: rgba(255,51,85,0.15); border: 1px solid rgba(255,51,85,0.35);
-    border-radius: 3px; padding: 3px 7px;
-    font-family: var(--font-mono); font-size: 9px; color: var(--danger);
-  }
-  .hud-bot {
-    display: flex; justify-content: space-between; align-items: flex-end;
-    padding: 7px 8px;
-  }
-  .hud-meta { display: flex; flex-direction: column; gap: 1px; }
-  .hud-ts  { font-family: var(--font-mono); font-size: 9px; color: rgba(180,210,240,0.7); }
-  .hud-res { font-family: var(--font-mono); font-size: 8px; color: var(--muted); }
-  /* corner brackets */
-  .corner { position: absolute; width: 14px; height: 14px; }
-  .corner.tl { top: 6px; left: 6px; border-top: 1.5px solid var(--accent); border-left: 1.5px solid var(--accent); opacity: .5; }
-  .corner.tr { top: 6px; right: 6px; border-top: 1.5px solid var(--accent); border-right: 1.5px solid var(--accent); opacity: .5; }
-  .corner.bl { bottom: 6px; left: 6px; border-bottom: 1.5px solid var(--accent); border-left: 1.5px solid var(--accent); opacity: .5; }
-  .corner.br { bottom: 6px; right: 6px; border-bottom: 1.5px solid var(--accent); border-right: 1.5px solid var(--accent); opacity: .5; }
-
-  /* motion flash */
-  @keyframes mflash { 0%,100%{box-shadow:inset 0 0 0 transparent}50%{box-shadow:inset 0 0 0 2px rgba(255,170,0,.6)} }
-  .cell.motion { animation: mflash 1s ease 3; }
-
-  /* ── SIDEBAR RIGHT ── */
-  .sr {
-    background: var(--surface); border-left: 1px solid var(--border);
-    padding: 12px 10px; display: flex; flex-direction: column; gap: 12px;
-    overflow-y: auto;
-  }
-
-  /* event log */
-  .elog { display: flex; flex-direction: column; gap: 4px; }
-  .eitem {
-    border-left: 2px solid var(--border); border-radius: 0 4px 4px 0;
-    padding: 5px 7px; background: var(--card); font-size: 11px;
-    animation: slideIn .3s ease;
-  }
-  @keyframes slideIn { from{opacity:0;transform:translateX(6px)} to{opacity:1} }
-  .eitem.info   { border-color: var(--accent); }
-  .eitem.motion { border-color: var(--accent2); }
-  .eitem.warn   { border-color: var(--warn); }
-  .eitem.err    { border-color: var(--danger); }
-  .etime { font-family: var(--font-mono); font-size: 8px; color: var(--muted); }
-  .emsg  { color: var(--text); margin-top: 2px; line-height: 1.3; font-size: 11px; }
-
-  /* bw chart */
-  .bwwrap { position: relative; height: 55px; }
-  .bwwrap canvas { width: 100%; height: 100%; display: block; }
-  .bwnum { position: absolute; top: 0; right: 0; font-family: var(--font-mono); font-size: 9px; color: var(--accent); }
-
-  /* vpn block */
-  .vpn-block { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }
-  .vpeer {
-    display: flex; align-items: center; gap: 7px;
-    padding: 4px 0; border-bottom: 1px solid rgba(19,34,64,.8); font-size: 11px;
-  }
-  .vpeer:last-child { border-bottom: none; }
-  .vpeer-info { flex: 1; }
-  .vpeer-name { color: var(--text); font-weight: 600; font-size: 11px; }
-  .vpeer-ip   { color: var(--muted); font-size: 9px; font-family: var(--font-mono); }
-  .vlat { font-family: var(--font-mono); font-size: 10px; color: var(--accent2); }
-
-  /* rtsp cred */
-  .cred-block { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }
-
-  /* ── STATUS BAR ── */
-  .statusbar {
-    height: 24px; background: var(--surface); border-top: 1px solid var(--border);
-    display: flex; align-items: center; padding: 0 14px; gap: 20px;
-    font-family: var(--font-mono); font-size: 9px; color: var(--muted);
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  }
-  .statusbar .g { color: var(--accent2); }
-  .statusbar .b { color: var(--accent); }
-  .statusbar .r { color: var(--danger); }
-
-  /* scrollbar */
-  ::-webkit-scrollbar { width: 3px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-</style>
+        @keyframes blink { 50% { opacity: 0; } }
+        @keyframes soundwave { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+    </style>
 </head>
 <body>
-<div class="scanbar"></div>
 
-<!-- ── HEADER ── -->
-<header>
-  <div class="logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="30" height="30" rx="5" stroke="#00d4ff" stroke-width="1.2" opacity=".4"/>
-        <circle cx="16" cy="14" r="5" stroke="#00d4ff" stroke-width="1.5"/>
-        <circle cx="16" cy="14" r="2" fill="#00d4ff" opacity=".7"/>
-        <path d="M8 22 Q16 28 24 22" stroke="#00ff9d" stroke-width="1" stroke-linecap="round" opacity=".6"/>
-        <line x1="16" y1="19" x2="16" y2="23" stroke="#00d4ff" stroke-width="1" opacity=".4"/>
-      </svg>
+  <header class="main-header">
+    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี</h2>
+    <div class="system-status">
+        <span id="clock">12:00:00</span>
+        <span class="status-green">🟢 Master Server Online</span>
     </div>
-    <div class="logo-text">
-      <span class="l1">SMART CITY</span>
-      <span class="l2">CCTV CONTROL CENTER</span>
-    </div>
-  </div>
+  </header>
 
-  <div class="header-mid">
-    <div class="cf-url" id="cfUrl">handbags-nitrogen-creator-appointment.trycloudflare.com</div>
-    <div class="cf-sub">Cloudflare Tunnel · go2rtc · WireGuard VPN · ROS 7.22</div>
-  </div>
+  <div class="main-layout">
+    <nav class="sidebar-menu">
+      <button class="menu-item active" onclick="switchPage('dashboard', this)">🗺️ แผนที่ & กล้อง (LIVE)</button>
+      <button class="menu-item" onclick="switchPage('audio', this)">🗓️ ตารางกระจายเสียง</button>
+      <button class="menu-item" onclick="switchPage('cctv', this)">🖥️ CCTV Video Wall</button>
+      <button class="menu-item" onclick="switchPage('stats', this)">📊 สถิติสิ่งแวดล้อม</button>
+      <button class="menu-item" onclick="switchPage('devices', this)">⚙️ จัดการอุปกรณ์ (Node)</button>
+    </nav>
 
-  <div class="header-right">
-    <div class="pill pill-green"><div class="dot dot-green"></div>VPN OK</div>
-    <div class="pill pill-blue"><div class="dot" style="background:var(--accent);box-shadow:0 0 5px var(--accent)"></div>CF TUNNEL</div>
-    <div class="clock-display" id="clock">--:--:--</div>
-  </div>
-</header>
+    <div id="page-dashboard" style="display: contents;">
+        <section class="center-zone">
+            <div class="map-layer-controls">
+                <button class="layer-btn active" onclick="setLayer('status', this)">🔵 สถานะ Node</button>
+                <button class="layer-btn" onclick="setLayer('pm25', this)">😷 แผนที่ฝุ่น PM2.5</button>
+                <button class="layer-btn" onclick="setLayer('temp', this)">🌡️ แผนที่ความร้อน</button>
+            </div>
+            <div id="map"></div>
+        </section>
 
-<!-- ── LAYOUT ── -->
-<div class="main">
-
-  <!-- LEFT SIDEBAR -->
-  <div class="sl">
-    <div>
-      <div class="sec-label">Network</div>
-      <div class="info-block">
-        <div class="info-row"><span class="ir-k">Master</span><span class="ir-v">192.168.9.1</span></div>
-        <div class="info-row"><span class="ir-k">WAN</span><span class="ir-v">192.168.1.100</span></div>
-        <div class="info-row"><span class="ir-k">Speed</span><span class="ir-v">1G/500M</span></div>
-        <div class="info-row"><span class="ir-k">Child</span><span class="ir-v">10.10.10.1</span></div>
-        <div class="info-row"><span class="ir-k">Speed</span><span class="ir-v">300/300M</span></div>
-        <div class="info-row"><span class="ir-k">VPN</span><span class="ir-v g">10.0.0.0/24</span></div>
-        <div class="info-row"><span class="ir-k">ROS</span><span class="ir-v">v7.22</span></div>
-        <div class="info-row"><span class="ir-k">go2rtc</span><span class="ir-v g">:1984</span></div>
-      </div>
-    </div>
-
-    <div>
-      <div class="sec-label">Cameras</div>
-      <div class="cam-list" id="camList"></div>
-    </div>
-
-    <div>
-      <div class="sec-label">Sensors</div>
-      <div class="sensor-grid">
-        <div class="scard"><div class="sval blue" id="sT">--</div><div class="sunit">°C</div><div class="slabel">TEMP</div></div>
-        <div class="scard"><div class="sval green" id="sH">--</div><div class="sunit">%RH</div><div class="slabel">HUMID</div></div>
-        <div class="scard"><div class="sval warn" id="sP">--</div><div class="sunit">µg/m³</div><div class="slabel">PM2.5</div></div>
-        <div class="scard"><div class="sval dim" id="sTr">--</div><div class="sunit">v/hr</div><div class="slabel">TRAFFIC</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CAMERA AREA -->
-  <div class="cam-area">
-    <div class="toolbar">
-      <div class="view-btns">
-        <button class="vbtn active" onclick="setLayout('2x2',this)">2×2</button>
-        <button class="vbtn" onclick="setLayout('full',this)">FULL</button>
-        <button class="vbtn" onclick="setLayout('pip',this)">1+3</button>
-      </div>
-      <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">
-        RTSP → go2rtc → WebRTC → Cloudflare → Browser
-      </div>
-      <div class="rec-pill">
-        <div class="dot dot-red"></div>REC ALL
-      </div>
+        <section class="right-zone">
+            <div style="font-size: 15px; color: #ffffff; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 5px;">📹 กล้องวงจรปิดรอบจุดติดตั้ง (WebRTC)</div>
+            
+            <div class="cctv-container">
+                <div class="camera-box">
+                    <span class="cam-tag">CAM 01</span><span class="live-dot"></span>
+                    <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
+                        src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[10.10.10.11]/cam/realmonitor?channel=1%26subtype=1">
+                    </iframe>
+                </div>
+                <div class="camera-box">
+                    <span class="cam-tag">CAM 02</span><span class="live-dot"></span>
+                    <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
+                        src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[10.10.10.12]/cam/realmonitor?channel=1%26subtype=1">
+                    </iframe>
+                </div>
+                <div class="camera-box">
+                    <span class="cam-tag">CAM 03</span><span class="live-dot"></span>
+                    <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
+                        src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[10.10.10.13]/cam/realmonitor?channel=1%26subtype=1">
+                    </iframe>
+                </div>
+                <div class="camera-box">
+                    <span class="cam-tag">CAM 04</span><span class="live-dot"></span>
+                    <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
+                        src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[10.10.10.14]/cam/realmonitor?channel=1%26subtype=1">
+                    </iframe>
+                </div>
+            </div>
+            
+            <div class="audio-control-panel">
+                <div style="font-size: 15px; color: #ffffff; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 10px;">📢 แผงควบคุมการประกาศเสียง</div>
+                <div class="zone-selector" id="zone-checkboxes"></div>
+                <button class="btn-mic" onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()">
+                    <span id="mic-icon">🎙️</span> <span id="mic-text">กดค้างเพื่อพูด (Push-to-Talk)</span>
+                </button>
+            </div>
+        </section>
     </div>
 
-    <div class="grid" id="camGrid"></div>
-  </div>
+    <div id="page-audio" class="page-content" style="grid-column: 2 / 4;">
+        <h2 class="page-title">🗓️ ตารางกระจายเสียงอัตโนมัติ</h2>
+        <table class="data-table">
+            <tr><th>เวลาทำงาน</th><th>ชื่อไฟล์เสียง</th><th>โซนเป้าหมาย</th><th>วนซ้ำ</th><th>สถานะ</th></tr>
+            <tr><td>08:00 น.</td><td>national_anthem.mp3</td><td>ทุกอำเภอ (10 Nodes)</td><td>ทุกวัน</td><td><span class="badge badge-online">ทำงาน</span></td></tr>
+            <tr><td>12:00 น.</td><td>covid_warning.wav</td><td>อ.เมือง, อ.บ้านโป่ง</td><td>จ.-ศ.</td><td><span class="badge badge-online">ทำงาน</span></td></tr>
+            <tr><td>18:00 น.</td><td>national_anthem.mp3</td><td>ทุกอำเภอ (10 Nodes)</td><td>ทุกวัน</td><td><span class="badge badge-online">ทำงาน</span></td></tr>
+        </table>
+        <button style="margin-top: 15px; padding: 10px 20px; background: #0d6efd; color: #fff; border: none; border-radius: 6px; cursor: pointer;">+ เพิ่มตารางเสียงใหม่</button>
+    </div>
 
-  <!-- RIGHT SIDEBAR -->
-  <div class="sr">
-    <div>
-      <div class="sec-label">VPN Peers</div>
-      <div class="vpn-block">
-        <div class="vpeer">
-          <div class="dot dot-green"></div>
-          <div class="vpeer-info">
-            <div class="vpeer-name">Master · Rb5009</div>
-            <div class="vpeer-ip">10.0.0.1 · 192.168.9.1</div>
-          </div>
-          <div class="vlat">1ms</div>
+    <div id="page-cctv" class="page-content" style="grid-column: 2 / 4;">
+        <h2 class="page-title">🖥️ ระบบตรวจสอบภาพรวม (Video Wall WebRTC)</h2>
+        <div class="video-wall">
+            <div class="camera-box">
+                <span class="cam-tag">CH 01 - แยกเมือง</span><span class="live-dot"></span>
+                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่1]/cam/realmonitor?channel=1%26subtype=1"></iframe>
+            </div>
+            <div class="camera-box">
+                <span class="cam-tag">CH 02 - ตลาดบ้านโป่ง</span><span class="live-dot"></span>
+                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่2]/cam/realmonitor?channel=1%26subtype=1"></iframe>
+            </div>
+            <div class="camera-box">
+                <span class="cam-tag">CH 03 - หน้าอำเภอสวนผึ้ง</span><span class="live-dot"></span>
+                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่3]/cam/realmonitor?channel=1%26subtype=1"></iframe>
+            </div>
+            <div class="camera-box">
+                <span class="cam-tag">CH 04 - ตลาดน้ำดำเนินฯ</span><span class="live-dot"></span>
+                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่4]/cam/realmonitor?channel=1%26subtype=1"></iframe>
+            </div>
+            <div class="camera-box">
+                <span class="cam-tag">CH 05 - แยกปากท่อ</span><span class="live-dot"></span>
+                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่5]/cam/realmonitor?channel=1%26subtype=1"></iframe>
+            </div>
+            <div class="camera-box">
+                <span class="cam-tag">CH 06 - ชุมชนโพธาราม</span><span class="live-dot"></span>
+                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่6]/cam/realmonitor?channel=1%26subtype=1"></iframe>
+            </div>
         </div>
-        <div class="vpeer">
-          <div class="dot dot-green"></div>
-          <div class="vpeer-info">
-            <div class="vpeer-name">Child · HAP AC</div>
-            <div class="vpeer-ip">10.0.0.2 · 10.10.10.1</div>
-          </div>
-          <div class="vlat" id="vpnLat">--ms</div>
+    </div>
+
+    <div id="page-stats" class="page-content" style="grid-column: 2 / 4;">
+        <h2 class="page-title">📊 สถิติสิ่งแวดล้อมเชิงลึก (ดึงจาก InfluxDB)</h2>
+        <div style="background: #212529; padding: 20px; border-radius: 8px; border: 1px solid #343a40; text-align: center; color: #6c757d; height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">📈</div>
+            <h3>พื้นที่สำหรับฝัง (Embed) หน้าจอ Grafana</h3>
+            <p style="margin-top: 10px; font-size: 14px;">เจ้าหน้าที่จะสามารถดูกราฟ PM2.5 และอุณหภูมิย้อนหลัง 1 เดือนได้ที่นี่</p>
         </div>
-      </div>
     </div>
 
-    <div>
-      <div class="sec-label">Bandwidth</div>
-      <div class="bwwrap"><canvas id="bwC"></canvas><div class="bwnum" id="bwN">0 Mbps</div></div>
+    <div id="page-devices" class="page-content" style="grid-column: 2 / 4;">
+        <h2 class="page-title">⚙️ สถานะบอร์ดคอนโทรล (STM32H7 Nodes)</h2>
+        <table class="data-table">
+            <tr><th>รหัสจุดติดตั้ง</th><th>IP Address (VPN)</th><th>Ping (ms)</th><th>อุณหบอร์ด</th><th>สถานะเครือข่าย</th><th>คำสั่งจัดการ</th></tr>
+            <tr><td>อ.เมืองราชบุรี</td><td>10.0.0.11</td><td>12 ms</td><td>45°C</td><td><span class="badge badge-online">เชื่อมต่อ</span></td><td><button class="layer-btn">Reboot</button></td></tr>
+            <tr><td>อ.บ้านโป่ง</td><td>10.0.0.15</td><td>15 ms</td><td>48°C</td><td><span class="badge badge-online">เชื่อมต่อ</span></td><td><button class="layer-btn">Reboot</button></td></tr>
+            <tr style="background: rgba(230,57,70,0.1);"><td>อ.สวนผึ้ง</td><td>10.0.0.13</td><td>-</td><td>-</td><td><span class="badge badge-offline">ขาดการติดต่อ 2 ชม.</span></td><td><button class="layer-btn">ตรวจสอบ</button></td></tr>
+        </table>
     </div>
 
-    <div>
-      <div class="sec-label">Event Log</div>
-      <div class="elog" id="elog"></div>
-    </div>
-
-    <div>
-      <div class="sec-label">RTSP Info</div>
-      <div class="cred-block">
-        <div class="info-row"><span class="ir-k">User</span><span class="ir-v g">admin</span></div>
-        <div class="info-row"><span class="ir-k">Pass</span><span class="ir-v">P@ssw0rd2025</span></div>
-        <div class="info-row"><span class="ir-k">Port</span><span class="ir-v">554</span></div>
-        <div class="info-row"><span class="ir-k">Brand</span><span class="ir-v">Dahua IPC</span></div>
-        <div class="info-row"><span class="ir-k">Stream</span><span class="ir-v">subtype=1</span></div>
-      </div>
-    </div>
   </div>
-</div>
 
-<div class="statusbar">
-  <span><span class="g">■</span> 4/4 ONLINE</span>
-  <span>VPN: <span class="b">CONNECTED</span></span>
-  <span>TUNNEL: <span class="b">handbags-nitrogen-creator-appointment.trycloudflare.com</span></span>
-  <span>REC: <span class="r">ACTIVE</span></span>
-  <span id="sbDate" class="b"></span>
-  <span style="margin-left:auto">Smart City CCTV · MikroTik ROS 7.22 · Dahua IPC · go2rtc</span>
-</div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
 
-<script>
-// ── Config ──
-const CF = 'https://handbags-nitrogen-creator-appointment.trycloudflare.com';
-const CAMS = [
-  { id:1, name:'CAM-01', ip:'10.10.10.11', loc:'ทางเข้าหลัก',  res:'1080p', poe:1 },
-  { id:2, name:'CAM-02', ip:'10.10.10.12', loc:'จุดจราจร A',    res:'1080p', poe:2 },
-  { id:3, name:'CAM-03', ip:'10.10.10.13', loc:'ลานจอดรถ',      res:'2MP',   poe:3 },
-  { id:4, name:'CAM-04', ip:'10.10.10.14', loc:'ทางออกฉุกเฉิน', res:'1080p', poe:4 },
-];
+    const nodes = [
+        { id: '1', name: "อ.เมืองราชบุรี", lat: 13.5350, lng: 99.8190, ip: "10.0.0.11", temp: 33, hum: 55, pm: 25 },
+        { id: '2', name: "อ.จอมบึง", lat: 13.6210, lng: 99.5930, ip: "10.0.0.12", temp: 31, hum: 60, pm: 15 },
+        { id: '3', name: "อ.สวนผึ้ง", lat: 13.5410, lng: 99.3080, ip: "10.0.0.13", temp: 28, hum: 75, pm: 10 },
+        { id: '4', name: "อ.ดำเนินสะดวก", lat: 13.5180, lng: 99.9320, ip: "10.0.0.14", temp: 34, hum: 65, pm: 22 },
+        { id: '5', name: "อ.บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.0.15", temp: 35, hum: 50, pm: 55 }, 
+        { id: '6', name: "อ.บางแพ", lat: 13.6930, lng: 99.9320, ip: "10.0.0.16", temp: 33, hum: 55, pm: 30 },
+        { id: '7', name: "อ.โพธาราม", lat: 13.6930, lng: 99.8490, ip: "10.0.0.17", temp: 34, hum: 52, pm: 42 },
+        { id: '8', name: "อ.ปากท่อ", lat: 13.3720, lng: 99.8430, ip: "10.0.0.18", temp: 32, hum: 58, pm: 18 },
+        { id: '9', name: "อ.วัดเพลง", lat: 13.4380, lng: 99.8890, ip: "10.0.0.19", temp: 33, hum: 60, pm: 21 },
+        { id: '10', name: "อ.บ้านคา", lat: 13.4210, lng: 99.4210, ip: "10.0.0.20", temp: 29, hum: 70, pm: 12 }
+    ];
 
-// ── Build sidebar cam list ──
-const cl = document.getElementById('camList');
-CAMS.forEach(c => {
-  cl.innerHTML += `
-  <div class="cam-item">
-    <div class="cam-icon">📷</div>
-    <div class="cam-info">
-      <div class="cam-name">${c.name}</div>
-      <div class="cam-ip">${c.ip}</div>
-      <div class="cam-st"><div class="dot dot-green" style="width:5px;height:5px"></div>LIVE</div>
-    </div>
-  </div>`;
-});
+    var map = L.map('map').setView([13.55, 99.7], 10);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
-// ── Build camera grid with go2rtc iframe ──
-function buildGrid() {
-  const grid = document.getElementById('camGrid');
-  grid.innerHTML = '';
-  CAMS.forEach(c => {
-    // go2rtc WebRTC stream URL via Cloudflare Tunnel
-    const streamUrl = `${CF}/stream.html?src=cam${c.id}&mode=webrtc`;
-    grid.innerHTML += `
-    <div class="cell" id="cell${c.id}">
-      <iframe
-        src="${streamUrl}"
-        allow="autoplay; camera; microphone"
-        allowfullscreen
-        loading="lazy"
-        onload="hideLoader(${c.id})"
-        title="${c.name} live stream">
-      </iframe>
-      <div class="cell-loader" id="loader${c.id}">
-        <div class="loader-ring"></div>
-        <div class="loader-text">${c.name} · ${c.loc}<br><span style="color:var(--accent);font-size:8px">กำลังโหลด stream...</span></div>
-      </div>
-      <div class="hud">
-        <div class="hud-top">
-          <div class="hud-label">${c.name} · ${c.loc}</div>
-          <div class="hud-rec"><div class="dot dot-red" style="width:5px;height:5px"></div>REC</div>
-        </div>
-        <div class="hud-bot">
-          <div class="hud-meta">
-            <div class="hud-ts" id="ts${c.id}">--:--:--</div>
-            <div class="hud-res">${c.res} · Dahua IPC · RTSP subtype=1</div>
-          </div>
-        </div>
-      </div>
-      <div class="corner tl"></div>
-      <div class="corner tr"></div>
-      <div class="corner bl"></div>
-      <div class="corner br"></div>
-    </div>`;
-  });
-}
+    let currentLayer = 'status'; 
+    const markerStore = {};
+    const zoneContainer = document.getElementById('zone-checkboxes');
 
-function hideLoader(id) {
-  const l = document.getElementById('loader'+id);
-  if(l) setTimeout(() => l.classList.add('hidden'), 800);
-}
+    function getAqiColorClass(pm) {
+        if(pm <= 25) return 'aqi-good';
+        if(pm <= 37) return 'aqi-mod';
+        if(pm <= 50) return 'aqi-bad';
+        return 'aqi-danger';
+    }
 
-// ── Layout switcher ──
-function setLayout(mode, btn) {
-  document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const g = document.getElementById('camGrid');
-  if (mode === '2x2') {
-    g.style.gridTemplateColumns = '1fr 1fr';
-    g.style.gridTemplateRows = '1fr 1fr';
-  } else if (mode === 'full') {
-    g.style.gridTemplateColumns = '1fr';
-    g.style.gridTemplateRows = '1fr';
-  } else {
-    g.style.gridTemplateColumns = '2fr 1fr';
-    g.style.gridTemplateRows = '1fr 1fr';
-  }
-}
+    function createIcon(node, type) {
+        let htmlContent = "";
+        if(type === 'status') {
+            htmlContent = "<div style='background-color:#0d6efd; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px #0d6efd;'></div>";
+            return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [16, 16], iconAnchor: [8, 8] });
+        } else if(type === 'pm25') {
+            let colorClass = getAqiColorClass(node.pm);
+            htmlContent = `<div class="data-marker ${colorClass}">${node.pm}</div>`;
+            return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [30, 30], iconAnchor: [15, 15] });
+        } else if(type === 'temp') {
+            htmlContent = `<div class="data-marker temp-marker">${node.temp}°</div>`;
+            return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [30, 30], iconAnchor: [15, 15] });
+        }
+    }
 
-// ── Clock ──
-function tick() {
-  const now = new Date();
-  const t = now.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-  const d = now.toLocaleDateString('th-TH', {day:'2-digit',month:'short',year:'numeric'});
-  document.getElementById('clock').textContent = t;
-  document.getElementById('sbDate').textContent = d;
-  CAMS.forEach(c => { const el = document.getElementById('ts'+c.id); if(el) el.textContent = t; });
-}
-setInterval(tick, 1000); tick();
+    const speakingIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#dc3545; width:22px; height:22px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-size:12px; animation: soundwave 1s infinite;'>📢</div>", iconSize: [22, 22], iconAnchor: [11, 11] });
 
-// ── Sensors ──
-function updateSensors() {
-  document.getElementById('sT').textContent  = (28 + Math.random()*3).toFixed(1);
-  document.getElementById('sH').textContent  = (58 + Math.random()*12).toFixed(0);
-  document.getElementById('sP').textContent  = (32 + Math.random()*22).toFixed(0);
-  document.getElementById('sTr').textContent = (110 + Math.random()*90).toFixed(0);
-  document.getElementById('vpnLat').textContent = (7 + Math.random()*14).toFixed(0)+'ms';
-}
-setInterval(updateSensors, 3500); updateSensors();
+    nodes.forEach(node => {
+        var marker = L.marker([node.lat, node.lng], {icon: createIcon(node, 'status')}).addTo(map);
+        markerStore[node.id] = { marker: marker, data: node };
 
-// ── Bandwidth sparkline ──
-const bwH = Array(60).fill(0);
-const bwCtx = document.getElementById('bwC').getContext('2d');
-function updateBW() {
-  const v = 12 + Math.random()*28;
-  bwH.push(v); bwH.shift();
-  document.getElementById('bwN').textContent = v.toFixed(1)+' Mbps';
-  const c = document.getElementById('bwC');
-  c.width = c.offsetWidth||160; c.height = c.offsetHeight||55;
-  const w=c.width, h=c.height, mx=60;
-  bwCtx.clearRect(0,0,w,h);
-  bwCtx.beginPath();
-  bwH.forEach((val,i) => { const x=i*(w/59), y=h-(val/mx)*h; i===0?bwCtx.moveTo(x,y):bwCtx.lineTo(x,y); });
-  const g=bwCtx.createLinearGradient(0,0,0,h);
-  g.addColorStop(0,'rgba(0,212,255,.8)'); g.addColorStop(1,'rgba(0,212,255,0)');
-  bwCtx.strokeStyle='#00d4ff'; bwCtx.lineWidth=1.5; bwCtx.stroke();
-  bwCtx.lineTo(w,h); bwCtx.lineTo(0,h); bwCtx.closePath();
-  bwCtx.fillStyle=g; bwCtx.fill();
-}
-setInterval(updateBW, 1500); updateBW();
+        let popupContent = `
+            <div class="popup-custom">
+                <h4>📍 ${node.name}</h4>
+                <div class="popup-grid">
+                    <div class="popup-item">🌡️ ${node.temp}°C</div>
+                    <div class="popup-item">💧 ${node.hum}%</div>
+                    <div class="popup-item" style="grid-column: span 2; color:${node.pm > 37 ? '#e63946' : '#2ec4b6'}">😷 PM 2.5: <b>${node.pm}</b> µg/m³</div>
+                </div>
+            </div>`;
+        marker.bindPopup(popupContent);
 
-// ── Event log ──
-function addEvent(type, msg) {
-  const log = document.getElementById('elog');
-  const t = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const d = document.createElement('div');
-  d.className = 'eitem '+type;
-  d.innerHTML = `<div class="etime">${t}</div><div class="emsg">${msg}</div>`;
-  log.prepend(d);
-  while(log.children.length > 14) log.removeChild(log.lastChild);
-}
+        let isChecked = (node.id <= 3) ? "checked" : "";
+        zoneContainer.innerHTML += `<label class="zone-label"><input type="checkbox" class="zone-cb" value="${node.id}" ${isChecked}> ${node.name}</label>`;
+    });
 
-const init = [
-  ['info',   'ระบบเริ่มต้น · RouterOS 7.22'],
-  ['info',   'WireGuard VPN · 10.0.0.0/24 Connected'],
-  ['info',   'Cloudflare Tunnel Connected'],
-  ['info',   'go2rtc stream เริ่มต้น · Dahua IPC x4'],
-  ['motion', 'CAM-01 ตรวจพบการเคลื่อนไหว'],
-  ['info',   'CAM-01 ถึง CAM-04 Online · subtype=1'],
-];
-init.forEach((e,i) => setTimeout(() => addEvent(e[0],e[1]), i*600));
+    function setLayer(type, btn) {
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentLayer = type;
 
-const rnd = [
-  ['motion','CAM-01 ตรวจพบการเคลื่อนไหว'],
-  ['info',  'WireGuard Handshake OK · 10.0.0.2'],
-  ['motion','CAM-03 ตรวจพบยานพาหนะ'],
-  ['info',  'Snapshot บันทึกสำเร็จ'],
-  ['warn',  'PM2.5 เกิน 50 µg/m³'],
-  ['motion','CAM-02 ตรวจพบบุคคล'],
-  ['info',  'Cloudflare Tunnel alive'],
-  ['motion','CAM-04 ตรวจพบจราจรหนาแน่น'],
-];
-setInterval(() => {
-  const e = rnd[Math.floor(Math.random()*rnd.length)];
-  addEvent(e[0],e[1]);
-  if(e[0]==='motion') {
-    const id = Math.ceil(Math.random()*4);
-    const cell = document.getElementById('cell'+id);
-    if(cell) { cell.classList.add('motion'); setTimeout(()=>cell.classList.remove('motion'),3100); }
-  }
-}, 6000);
+        Object.values(markerStore).forEach(item => {
+            item.marker.setIcon(createIcon(item.data, type));
+        });
+    }
 
-buildGrid();
-</script>
+    function startSpeak() {
+        document.querySelector('.btn-mic').style.backgroundColor = "#ffc107"; 
+        document.querySelector('.btn-mic').style.color = "#000";
+        document.getElementById('mic-text').innerText = "🔴 กำลังประกาศเสียง...";
+        
+        document.querySelectorAll('.zone-cb').forEach(cb => {
+            if(cb.checked) markerStore[cb.value].marker.setIcon(speakingIcon);
+        });
+    }
+    
+    function stopSpeak() {
+        document.querySelector('.btn-mic').style.backgroundColor = "#dc3545"; 
+        document.querySelector('.btn-mic').style.color = "#fff";
+        document.getElementById('mic-text').innerText = "กดค้างเพื่อพูด (Push-to-Talk)";
+        
+        Object.values(markerStore).forEach(item => {
+            item.marker.setIcon(createIcon(item.data, currentLayer));
+        });
+    }
+
+    function switchPage(pageId, btn) {
+        document.getElementById('page-dashboard').style.display = 'none';
+        document.querySelectorAll('.page-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+        
+        if(pageId === 'dashboard') {
+            document.getElementById('page-dashboard').style.display = 'contents';
+            setTimeout(() => map.invalidateSize(), 100);
+        } else {
+            document.getElementById('page-' + pageId).style.display = 'block';
+        }
+        btn.classList.add('active');
+    }
+  </script>
 </body>
 </html>
