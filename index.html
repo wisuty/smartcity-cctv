@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart City — CCTV Live</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #04080f;
+    --surface:   #080f1a;
+    --card:      #0c1525;
+    --border:    #132240;
+    --border2:   #1e3a6e;
+    --accent:    #00d4ff;
+    --accent2:   #00ff9d;
+    --danger:    #ff3355;
+    --warn:      #ffaa00;
+    --text:      #b8d4f0;
+    --muted:     #3d6080;
+    --font-hd:   'Orbitron', monospace;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-ui:   'IBM Plex Sans Thai', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── scanline ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px);
+    pointer-events: none; z-index: 9999;
+  }
+
+  /* ── scan bar ── */
+  .scanbar {
+    position: fixed; left: 0; right: 0; height: 100px; z-index: 9998; pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgba(0,212,255,0.025), transparent);
+    animation: scanmove 8s linear infinite;
+  }
+  @keyframes scanmove { from { top: -100px; } to { top: 100vh; } }
+
+  /* ── HEADER ── */
+  header {
+    height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: relative; z-index: 100;
+  }
+  header::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), var(--accent), transparent);
+    opacity: 0.4;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px; position: relative; flex-shrink: 0;
+  }
+  .logo-mark svg { width: 100%; height: 100%; }
+  .logo-text {
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .logo-text .l1 {
+    font-family: var(--font-hd);
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 4px; color: #fff;
+    line-height: 1;
+  }
+  .logo-text .l2 {
+    font-family: var(--font-mono);
+    font-size: 9px; color: var(--muted);
+    letter-spacing: 3px; line-height: 1;
+  }
+
+  .header-mid {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .cf-url {
+    font-family: var(--font-mono); font-size: 10px; color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  .cf-sub { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+
+  .header-right {
+    display: flex; align-items: center; gap: 16px;
+  }
+  .pill {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid; border-radius: 20px;
+    padding: 4px 10px; font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  .pill-green { border-color: var(--accent2); color: var(--accent2); }
+  .pill-blue  { border-color: var(--accent);  color: var(--accent); }
+  .pill-red   { border-color: var(--danger);  color: var(--danger); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-green { background: var(--accent2); box-shadow: 0 0 5px var(--accent2); animation: blink 2s infinite; }
+  .dot-red   { background: var(--danger);  box-shadow: 0 0 5px var(--danger);  animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .clock-display {
+    font-family: var(--font-hd); font-size: 14px; font-weight: 600;
+    color: var(--accent); letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(0,212,255,0.5);
+  }
+
+  /* ── MAIN ── */
+  .main {
+    display: grid;
+    grid-template-columns: 180px 1fr 170px;
+    height: calc(100vh - 52px - 24px);
+    gap: 0;
+  }
+
+  /* ── SIDEBAR LEFT ── */
+  .sl {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 12px 10px;
+    display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto;
+  }
+  .sec-label {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 3px;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .info-block {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 10px;
+  }
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 3px 0; font-size: 11px;
+    border-bottom: 1px solid rgba(19,34,64,0.7);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .ir-k { color: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+  .ir-v { color: var(--accent); font-family: var(--font-mono); font-size: 10px; }
+  .ir-v.g { color: var(--accent2); }
+
+  /* cam list */
+  .cam-list { display: flex; flex-direction: column; gap: 5px; }
+  .cam-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 5px; cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .cam-item:hover { border-color: var(--accent); background: rgba(0,212,255,0.04); }
+  .cam-icon {
+    width: 32px; height: 24px; background: #000;
+    border-radius: 3px; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .cam-info { flex: 1; min-width: 0; }
+  .cam-name { font-size: 12px; font-weight: 600; color: #fff; line-height: 1; }
+  .cam-ip { font-size: 9px; color: var(--muted); font-family: var(--font-mono); margin-top: 2px; }
+  .cam-st { display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--accent2); margin-top: 2px; }
+
+  /* sensors */
+  .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .scard {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 5px; padding: 7px; text-align: center;
+  }
+  .sval { font-family: var(--font-hd); font-size: 16px; font-weight: 700; line-height: 1; }
+  .sval.blue  { color: var(--accent); text-shadow: 0 0 8px rgba(0,212,255,.4); }
+  .sval.green { color: var(--accent2); text-shadow: 0 0 8px rgba(0,255,157,.4); }
+  .sval.warn  { color: var(--warn); }
+  .sval.dim   { color: #667; }
+  .sunit  { font-size: 9px; color: var(--muted); margin-top: 2px; font-family: var(--font-mono); }
+  .slabel { font-size: 9px; color: var(--muted); margin-top: 3px; letter-spacing: 1px; }
+
+  /* ── CAMERA GRID ── */
+  .cam-area {
+    background: #020609;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 14px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .view-btns { display: flex; gap: 5px; }
+  .vbtn {
+    padding: 3px 12px; font-size: 11px; letter-spacing: 1px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: transparent; color: var(--muted);
+    cursor: pointer; font-family: var(--font-mono);
+    transition: all .2s;
+  }
+  .vbtn.active, .vbtn:hover {
+    border-color: var(--accent); color: var(--accent);
+    background: rgba(0,212,255,0.07);
+  }
+  .rec-pill {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--danger);
+  }
+
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px; padding: 2px;
+  }
+
+  /* ── CAMERA CELL ── */
+  .cell {
+    position: relative; background: #000;
+    border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden; transition: border-color .2s;
+  }
+  .cell:hover { border-color: var(--accent2); }
+
+  /* go2rtc iframe embed */
+  .cell iframe {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: none; background: #000;
+  }
+
+  /* loading placeholder shown before iframe loads */
+  .cell-loader {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    background: #000; z-index: 2;
+    transition: opacity .5s;
+  }
+  .cell-loader.hidden { opacity: 0; pointer-events: none; }
+  .loader-ring {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-align: center; line-height: 1.6; }
+
+  /* HUD overlay */
+  .hud {
+    position: absolute; inset: 0; pointer-events: none; z-index: 3;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .hud-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 7px 8px;
+  }
+  .hud-label {
+    background: rgba(0,0,0,0.72); border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 3px; padding: 3px 8px;
+    font-family: var(--font-mono); font-size: 10px; color: #e0f0ff;
+    backdrop-filter: blur(4px); letter-spacing: 1px;
+  }
+  .hud-rec {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(255,51,85,0.15); border: 1px solid rgba(255,51,85,0.35);
+    border-radius: 3px; padding: 3px 7px;
+    font-family: var(--font-mono); font-size: 9px; color: var(--danger);
+  }
+  .hud-bot {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 7px 8px;
+  }
+  .hud-meta { display: flex; flex-direction: column; gap: 1px; }
+  .hud-ts  { font-family: var(--font-mono); font-size: 9px; color: rgba(180,210,240,0.7); }
+  .hud-res { font-family: var(--font-mono); font-size: 8px; color: var(--muted); }
+  /* corner brackets */
+  .corner { position: absolute; width: 14px; height: 14px; }
+  .corner.tl { top: 6px; left: 6px; border-top: 1.5px solid var(--accent); border-left: 1.5px solid var(--accent); opacity: .5; }
+  .corner.tr { top: 6px; right: 6px; border-top: 1.5px solid var(--accent); border-right: 1.5px solid var(--accent); opacity: .5; }
+  .corner.bl { bottom: 6px; left: 6px; border-bottom: 1.5px solid var(--accent); border-left: 1.5px solid var(--accent); opacity: .5; }
+  .corner.br { bottom: 6px; right: 6px; border-bottom: 1.5px solid var(--accent); border-right: 1.5px solid var(--accent); opacity: .5; }
+
+  /* motion flash */
+  @keyframes mflash { 0%,100%{box-shadow:inset 0 0 0 transparent}50%{box-shadow:inset 0 0 0 2px rgba(255,170,0,.6)} }
+  .cell.motion { animation: mflash 1s ease 3; }
+
+  /* ── SIDEBAR RIGHT ── */
+  .sr {
+    background: var(--surface); border-left: 1px solid var(--border);
+    padding: 12px 10px; display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto;
+  }
+
+  /* event log */
+  .elog { display: flex; flex-direction: column; gap: 4px; }
+  .eitem {
+    border-left: 2px solid var(--border); border-radius: 0 4px 4px 0;
+    padding: 5px 7px; background: var(--card); font-size: 11px;
+    animation: slideIn .3s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateX(6px)} to{opacity:1} }
+  .eitem.info   { border-color: var(--accent); }
+  .eitem.motion { border-color: var(--accent2); }
+  .eitem.warn   { border-color: var(--warn); }
+  .eitem.err    { border-color: var(--danger); }
+  .etime { font-family: var(--font-mono); font-size: 8px; color: var(--muted); }
+  .emsg  { color: var(--text); margin-top: 2px; line-height: 1.3; font-size: 11px; }
+
+  /* bw chart */
+  .bwwrap { position: relative; height: 55px; }
+  .bwwrap canvas { width: 100%; height: 100%; display: block; }
+  .bwnum { position: absolute; top: 0; right: 0; font-family: var(--font-mono); font-size: 9px; color: var(--accent); }
+
+  /* vpn block */
+  .vpn-block { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }
+  .vpeer {
+    display: flex; align-items: center; gap: 7px;
+    padding: 4px 0; border-bottom: 1px solid rgba(19,34,64,.8); font-size: 11px;
+  }
+  .vpeer:last-child { border-bottom: none; }
+  .vpeer-info { flex: 1; }
+  .vpeer-name { color: var(--text); font-weight: 600; font-size: 11px; }
+  .vpeer-ip   { color: var(--muted); font-size: 9px; font-family: var(--font-mono); }
+  .vlat { font-family: var(--font-mono); font-size: 10px; color: var(--accent2); }
+
+  /* rtsp cred */
+  .cred-block { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }
+
+  /* ── STATUS BAR ── */
+  .statusbar {
+    height: 24px; background: var(--surface); border-top: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 14px; gap: 20px;
+    font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  }
+  .statusbar .g { color: var(--accent2); }
+  .statusbar .b { color: var(--accent); }
+  .statusbar .r { color: var(--danger); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="scanbar"></div>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="30" height="30" rx="5" stroke="#00d4ff" stroke-width="1.2" opacity=".4"/>
+        <circle cx="16" cy="14" r="5" stroke="#00d4ff" stroke-width="1.5"/>
+        <circle cx="16" cy="14" r="2" fill="#00d4ff" opacity=".7"/>
+        <path d="M8 22 Q16 28 24 22" stroke="#00ff9d" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+        <line x1="16" y1="19" x2="16" y2="23" stroke="#00d4ff" stroke-width="1" opacity=".4"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="l1">SMART CITY</span>
+      <span class="l2">CCTV CONTROL CENTER</span>
+    </div>
+  </div>
+
+  <div class="header-mid">
+    <div class="cf-url" id="cfUrl">handbags-nitrogen-creator-appointment.trycloudflare.com</div>
+    <div class="cf-sub">Cloudflare Tunnel · go2rtc · WireGuard VPN · ROS 7.22</div>
+  </div>
+
+  <div class="header-right">
+    <div class="pill pill-green"><div class="dot dot-green"></div>VPN OK</div>
+    <div class="pill pill-blue"><div class="dot" style="background:var(--accent);box-shadow:0 0 5px var(--accent)"></div>CF TUNNEL</div>
+    <div class="clock-display" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<!-- ── LAYOUT ── -->
+<div class="main">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sl">
+    <div>
+      <div class="sec-label">Network</div>
+      <div class="info-block">
+        <div class="info-row"><span class="ir-k">Master</span><span class="ir-v">192.168.9.1</span></div>
+        <div class="info-row"><span class="ir-k">WAN</span><span class="ir-v">192.168.1.100</span></div>
+        <div class="info-row"><span class="ir-k">Speed</span><span class="ir-v">1G/500M</span></div>
+        <div class="info-row"><span class="ir-k">Child</span><span class="ir-v">10.10.10.1</span></div>
+        <div class="info-row"><span class="ir-k">Speed</span><span class="ir-v">300/300M</span></div>
+        <div class="info-row"><span class="ir-k">VPN</span><span class="ir-v g">10.0.0.0/24</span></div>
+        <div class="info-row"><span class="ir-k">ROS</span><span class="ir-v">v7.22</span></div>
+        <div class="info-row"><span class="ir-k">go2rtc</span><span class="ir-v g">:1984</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Cameras</div>
+      <div class="cam-list" id="camList"></div>
+    </div>
+
+    <div>
+      <div class="sec-label">Sensors</div>
+      <div class="sensor-grid">
+        <div class="scard"><div class="sval blue" id="sT">--</div><div class="sunit">°C</div><div class="slabel">TEMP</div></div>
+        <div class="scard"><div class="sval green" id="sH">--</div><div class="sunit">%RH</div><div class="slabel">HUMID</div></div>
+        <div class="scard"><div class="sval warn" id="sP">--</div><div class="sunit">µg/m³</div><div class="slabel">PM2.5</div></div>
+        <div class="scard"><div class="sval dim" id="sTr">--</div><div class="sunit">v/hr</div><div class="slabel">TRAFFIC</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMERA AREA -->
+  <div class="cam-area">
+    <div class="toolbar">
+      <div class="view-btns">
+        <button class="vbtn active" onclick="setLayout('2x2',this)">2×2</button>
+        <button class="vbtn" onclick="setLayout('full',this)">FULL</button>
+        <button class="vbtn" onclick="setLayout('pip',this)">1+3</button>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">
+        RTSP → go2rtc → WebRTC → Cloudflare → Browser
+      </div>
+      <div class="rec-pill">
+        <div class="dot dot-red"></div>REC ALL
+      </div>
+    </div>
+
+    <div class="grid" id="camGrid"></div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sr">
+    <div>
+      <div class="sec-label">VPN Peers</div>
+      <div class="vpn-block">
+        <div class="vpeer">
+          <div class="dot dot-green"></div>
+          <div class="vpeer-info">
+            <div class="vpeer-name">Master · Rb5009</div>
+            <div class="vpeer-ip">10.0.0.1 · 192.168.9.1</div>
+          </div>
+          <div class="vlat">1ms</div>
+        </div>
+        <div class="vpeer">
+          <div class="dot dot-green"></div>
+          <div class="vpeer-info">
+            <div class="vpeer-name">Child · HAP AC</div>
+            <div class="vpeer-ip">10.0.0.2 · 10.10.10.1</div>
+          </div>
+          <div class="vlat" id="vpnLat">--ms</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Bandwidth</div>
+      <div class="bwwrap"><canvas id="bwC"></canvas><div class="bwnum" id="bwN">0 Mbps</div></div>
+    </div>
+
+    <div>
+      <div class="sec-label">Event Log</div>
+      <div class="elog" id="elog"></div>
+    </div>
+
+    <div>
+      <div class="sec-label">RTSP Info</div>
+      <div class="cred-block">
+        <div class="info-row"><span class="ir-k">User</span><span class="ir-v g">admin</span></div>
+        <div class="info-row"><span class="ir-k">Pass</span><span class="ir-v">P@ssw0rd2025</span></div>
+        <div class="info-row"><span class="ir-k">Port</span><span class="ir-v">554</span></div>
+        <div class="info-row"><span class="ir-k">Brand</span><span class="ir-v">Dahua IPC</span></div>
+        <div class="info-row"><span class="ir-k">Stream</span><span class="ir-v">subtype=1</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span><span class="g">■</span> 4/4 ONLINE</span>
+  <span>VPN: <span class="b">CONNECTED</span></span>
+  <span>TUNNEL: <span class="b">handbags-nitrogen-creator-appointment.trycloudflare.com</span></span>
+  <span>REC: <span class="r">ACTIVE</span></span>
+  <span id="sbDate" class="b"></span>
+  <span style="margin-left:auto">Smart City CCTV · MikroTik ROS 7.22 · Dahua IPC · go2rtc</span>
+</div>
+
+<script>
+// ── Config ──
+const CF = 'https://handbags-nitrogen-creator-appointment.trycloudflare.com';
+const CAMS = [
+  { id:1, name:'CAM-01', ip:'10.10.10.11', loc:'ทางเข้าหลัก',  res:'1080p', poe:1 },
+  { id:2, name:'CAM-02', ip:'10.10.10.12', loc:'จุดจราจร A',    res:'1080p', poe:2 },
+  { id:3, name:'CAM-03', ip:'10.10.10.13', loc:'ลานจอดรถ',      res:'2MP',   poe:3 },
+  { id:4, name:'CAM-04', ip:'10.10.10.14', loc:'ทางออกฉุกเฉิน', res:'1080p', poe:4 },
+];
+
+// ── Build sidebar cam list ──
+const cl = document.getElementById('camList');
+CAMS.forEach(c => {
+  cl.innerHTML += `
+  <div class="cam-item">
+    <div class="cam-icon">📷</div>
+    <div class="cam-info">
+      <div class="cam-name">${c.name}</div>
+      <div class="cam-ip">${c.ip}</div>
+      <div class="cam-st"><div class="dot dot-green" style="width:5px;height:5px"></div>LIVE</div>
+    </div>
+  </div>`;
+});
+
+// ── Build camera grid with go2rtc iframe ──
+function buildGrid() {
+  const grid = document.getElementById('camGrid');
+  grid.innerHTML = '';
+  CAMS.forEach(c => {
+    // go2rtc WebRTC stream URL via Cloudflare Tunnel
+    const streamUrl = `${CF}/stream.html?src=cam${c.id}&mode=webrtc`;
+    grid.innerHTML += `
+    <div class="cell" id="cell${c.id}">
+      <iframe
+        src="${streamUrl}"
+        allow="autoplay; camera; microphone"
+        allowfullscreen
+        loading="lazy"
+        onload="hideLoader(${c.id})"
+        title="${c.name} live stream">
+      </iframe>
+      <div class="cell-loader" id="loader${c.id}">
+        <div class="loader-ring"></div>
+        <div class="loader-text">${c.name} · ${c.loc}<br><span style="color:var(--accent);font-size:8px">กำลังโหลด stream...</span></div>
+      </div>
+      <div class="hud">
+        <div class="hud-top">
+          <div class="hud-label">${c.name} · ${c.loc}</div>
+          <div class="hud-rec"><div class="dot dot-red" style="width:5px;height:5px"></div>REC</div>
+        </div>
+        <div class="hud-bot">
+          <div class="hud-meta">
+            <div class="hud-ts" id="ts${c.id}">--:--:--</div>
+            <div class="hud-res">${c.res} · Dahua IPC · RTSP subtype=1</div>
+          </div>
+        </div>
+      </div>
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+    </div>`;
+  });
+}
+
+function hideLoader(id) {
+  const l = document.getElementById('loader'+id);
+  if(l) setTimeout(() => l.classList.add('hidden'), 800);
+}
+
+// ── Layout switcher ──
+function setLayout(mode, btn) {
+  document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const g = document.getElementById('camGrid');
+  if (mode === '2x2') {
+    g.style.gridTemplateColumns = '1fr 1fr';
+    g.style.gridTemplateRows = '1fr 1fr';
+  } else if (mode === 'full') {
+    g.style.gridTemplateColumns = '1fr';
+    g.style.gridTemplateRows = '1fr';
+  } else {
+    g.style.gridTemplateColumns = '2fr 1fr';
+    g.style.gridTemplateRows = '1fr 1fr';
+  }
+}
+
+// ── Clock ──
+function tick() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  const d = now.toLocaleDateString('th-TH', {day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('clock').textContent = t;
+  document.getElementById('sbDate').textContent = d;
+  CAMS.forEach(c => { const el = document.getElementById('ts'+c.id); if(el) el.textContent = t; });
+}
+setInterval(tick, 1000); tick();
+
+// ── Sensors ──
+function updateSensors() {
+  document.getElementById('sT').textContent  = (28 + Math.random()*3).toFixed(1);
+  document.getElementById('sH').textContent  = (58 + Math.random()*12).toFixed(0);
+  document.getElementById('sP').textContent  = (32 + Math.random()*22).toFixed(0);
+  document.getElementById('sTr').textContent = (110 + Math.random()*90).toFixed(0);
+  document.getElementById('vpnLat').textContent = (7 + Math.random()*14).toFixed(0)+'ms';
+}
+setInterval(updateSensors, 3500); updateSensors();
+
+// ── Bandwidth sparkline ──
+const bwH = Array(60).fill(0);
+const bwCtx = document.getElementById('bwC').getContext('2d');
+function updateBW() {
+  const v = 12 + Math.random()*28;
+  bwH.push(v); bwH.shift();
+  document.getElementById('bwN').textContent = v.toFixed(1)+' Mbps';
+  const c = document.getElementById('bwC');
+  c.width = c.offsetWidth||160; c.height = c.offsetHeight||55;
+  const w=c.width, h=c.height, mx=60;
+  bwCtx.clearRect(0,0,w,h);
+  bwCtx.beginPath();
+  bwH.forEach((val,i) => { const x=i*(w/59), y=h-(val/mx)*h; i===0?bwCtx.moveTo(x,y):bwCtx.lineTo(x,y); });
+  const g=bwCtx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'rgba(0,212,255,.8)'); g.addColorStop(1,'rgba(0,212,255,0)');
+  bwCtx.strokeStyle='#00d4ff'; bwCtx.lineWidth=1.5; bwCtx.stroke();
+  bwCtx.lineTo(w,h); bwCtx.lineTo(0,h); bwCtx.closePath();
+  bwCtx.fillStyle=g; bwCtx.fill();
+}
+setInterval(updateBW, 1500); updateBW();
+
+// ── Event log ──
+function addEvent(type, msg) {
+  const log = document.getElementById('elog');
+  const t = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const d = document.createElement('div');
+  d.className = 'eitem '+type;
+  d.innerHTML = `<div class="etime">${t}</div><div class="emsg">${msg}</div>`;
+  log.prepend(d);
+  while(log.children.length > 14) log.removeChild(log.lastChild);
+}
+
+const init = [
+  ['info',   'ระบบเริ่มต้น · RouterOS 7.22'],
+  ['info',   'WireGuard VPN · 10.0.0.0/24 Connected'],
+  ['info',   'Cloudflare Tunnel Connected'],
+  ['info',   'go2rtc stream เริ่มต้น · Dahua IPC x4'],
+  ['motion', 'CAM-01 ตรวจพบการเคลื่อนไหว'],
+  ['info',   'CAM-01 ถึง CAM-04 Online · subtype=1'],
+];
+init.forEach((e,i) => setTimeout(() => addEvent(e[0],e[1]), i*600));
+
+const rnd = [
+  ['motion','CAM-01 ตรวจพบการเคลื่อนไหว'],
+  ['info',  'WireGuard Handshake OK · 10.0.0.2'],
+  ['motion','CAM-03 ตรวจพบยานพาหนะ'],
+  ['info',  'Snapshot บันทึกสำเร็จ'],
+  ['warn',  'PM2.5 เกิน 50 µg/m³'],
+  ['motion','CAM-02 ตรวจพบบุคคล'],
+  ['info',  'Cloudflare Tunnel alive'],
+  ['motion','CAM-04 ตรวจพบจราจรหนาแน่น'],
+];
+setInterval(() => {
+  const e = rnd[Math.floor(Math.random()*rnd.length)];
+  addEvent(e[0],e[1]);
+  if(e[0]==='motion') {
+    const id = Math.ceil(Math.random()*4);
+    const cell = document.getElementById('cell'+id);
+    if(cell) { cell.classList.add('motion'); setTimeout(()=>cell.classList.remove('motion'),3100); }
+  }
+}, 6000);
+
+buildGrid();
+</script>
+</body>
+</html>
