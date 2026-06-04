@@ -3,183 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart City Command Center - Ratchaburi V4 (LIVE)</title>
+    <title>Smart City Command Center - Ratchaburi V5</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background-color: #1a1d20; color: #e9ecef; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
         /* Header */
-        .main-header { background-color: #111417; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d6efd; height: 60px; }
+        .main-header { background-color: #111417; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d6efd; height: 60px; z-index: 100;}
         .main-header h2 { font-size: 18px; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 10px; }
         .system-status { display: flex; align-items: center; gap: 15px; font-size: 13px; }
         .status-green { color: #2ec4b6; font-weight: bold; background: rgba(46, 196, 182, 0.1); padding: 5px 10px; border-radius: 20px;}
         
-        /* Layout */
+        /* Layout (3 Columns) */
         .main-layout { display: flex; flex: 1; height: calc(100vh - 60px); position: relative;}
-        .sidebar-menu { width: 220px; background-color: #181b1f; border-right: 1px solid #343a40; padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; z-index: 10;}
-        .center-zone { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; transition: 0.3s;}
         
-        /* Right Zone & Toggle */
-        .right-zone { width: 380px; padding: 15px; display: flex; flex-direction: column; gap: 15px; background-color: #1a1d20; border-left: 1px solid #343a40; overflow-y: auto; transition: 0.3s ease-in-out;}
-        .right-zone.collapsed { width: 0; padding: 0; border: none; overflow: hidden; opacity: 0;}
-        .toggle-btn { position: absolute; top: 50%; right: 380px; transform: translateY(-50%); background: #0d6efd; color: white; border: none; width: 25px; height: 50px; border-radius: 8px 0 0 8px; cursor: pointer; z-index: 1000; display: flex; justify-content: center; align-items: center; font-size: 12px; transition: 0.3s ease-in-out; box-shadow: -2px 0 5px rgba(0,0,0,0.3);}
-        .toggle-btn.collapsed { right: 0; background: #343a40;}
-        .toggle-btn:hover { filter: brightness(1.2); }
-
-        /* Menu */
-        .menu-item { background: none; border: none; color: #adb5bd; padding: 12px 10px; text-align: left; font-size: 14px; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        /* Left: Sidebar */
+        .sidebar-menu { width: 200px; background-color: #181b1f; border-right: 1px solid #343a40; padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; z-index: 10;}
+        .menu-item { background: none; border: none; color: #adb5bd; padding: 12px 10px; text-align: left; font-size: 13px; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
         .menu-item:hover { background-color: #2c3036; color: #ffffff; }
         .menu-item.active { background-color: #0d6efd; color: #ffffff; font-weight: bold; }
         
-        /* Map & Layers */
-        #map { flex: 1; width: 100%; background-color: #2b3035; z-index: 1;}
-        .map-layer-controls { position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; background: rgba(24,27,31,0.85); padding: 10px; border-radius: 8px; backdrop-filter: blur(4px); border: 1px solid #343a40;}
-        .layer-btn { background: #212529; color: #adb5bd; border: 1px solid #3d4349; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: 0.2s; text-align: left;}
+        /* Center: Map (Top) & CCTV (Bottom) */
+        .center-zone { flex: 1; display: flex; flex-direction: column; min-width: 0; background-color: #1a1d20;}
+        #map { flex: 1; width: 100%; min-height: 200px; z-index: 1;}
+        .map-layer-controls { position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; flex-direction: column; gap: 5px; background: rgba(24,27,31,0.85); padding: 10px; border-radius: 8px; backdrop-filter: blur(4px); border: 1px solid #343a40;}
+        .layer-btn { background: #212529; color: #adb5bd; border: 1px solid #3d4349; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: 0.2s; text-align: left;}
         .layer-btn.active { background: #0d6efd; color: #fff; font-weight: bold; border-color: #0d6efd;}
-
-        /* Data Markers (Custom Icons) */
+        
+        /* Center Bottom: CCTV Grid (1 Row, 4 Columns) */
+        .cctv-bottom-panel { height: 260px; background-color: #111417; border-top: 1px solid #343a40; padding: 10px; display: flex; flex-direction: column;}
+        .cctv-header { color: #fff; font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between;}
+        .cctv-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .camera-box { background-color: #050505; border-radius: 6px; border: 1px solid #343a40; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;}
+        .cam-feed { width: 100%; height: 100%; border: none; background-color: #000; object-fit: cover;}
+        .cam-tag { position: absolute; top: 5px; left: 5px; background-color: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #fff; z-index: 2;}
+        .live-dot { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; background-color: #2ec4b6; border-radius: 50%; animation: blink 1s infinite; z-index: 2;}
+        .no-signal { background: #111; color: #e63946; font-weight: bold; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; height: 100%; justify-content: center;}
+        
+        /* Right: Status & Audio */
+        .right-zone { width: 340px; padding: 15px; display: flex; flex-direction: column; gap: 15px; background-color: #181b1f; border-left: 1px solid #343a40; flex-shrink: 0; overflow-y: auto;}
+        .status-card { background-color: #212529; border-radius: 8px; border: 1px solid #3d4349; padding: 12px; }
+        .card-title { font-size: 14px; color: #0d6efd; border-bottom: 1px solid #343a40; padding-bottom: 6px; margin-bottom: 10px; font-weight: bold;}
+        
+        /* Status Elements */
+        .vpn-status { display: flex; justify-content: space-between; font-size: 12px; color: #adb5bd; margin-bottom: 5px;}
+        .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .sensor-item { background: #1a1d20; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #343a40; }
+        .sensor-val { font-size: 18px; font-weight: bold; color: #2ec4b6; margin-top: 5px;}
+        .sensor-val.danger { color: #e63946; }
+        
+        /* Audio Control */
+        .zone-selector { background-color: #1a1d20; padding: 10px; border-radius: 6px; border: 1px solid #3d4349; margin-bottom: 10px; max-height: 180px; overflow-y: auto;}
+        .zone-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #ced4da; margin-bottom: 8px; cursor: pointer;}
+        .btn-mic { background-color: #dc3545; color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 10px rgba(220,53,69,0.3);}
+        .btn-mic:active { transform: scale(0.97); background-color: #a52834;}
+        
+        /* Map Markers */
         .data-marker { display: flex; justify-content: center; align-items: center; border-radius: 50%; color: #000; font-weight: bold; font-size: 12px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); width: 30px !important; height: 30px !important; margin-left: -15px !important; margin-top: -15px !important; }
         .aqi-good { background-color: #2ec4b6; } .aqi-mod { background-color: #ffb703; } .aqi-bad { background-color: #fb8500; } .aqi-danger { background-color: #e63946; color: #fff;}
         .temp-marker { background-color: #4cc9f0; }
 
-        /* Popup */
-        .leaflet-popup-content-wrapper { background-color: #212529; color: #e9ecef; border: 1px solid #3d4349; border-radius: 8px; width: 220px; }
-        .leaflet-popup-tip { background-color: #212529; }
-        .popup-custom h4 { color: #0d6efd; margin-bottom: 5px; border-bottom: 1px solid #3d4349; padding-bottom: 5px; display: flex; justify-content: space-between;}
-        .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .popup-item { background: #1a1d20; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #343a40; font-size: 12px; }
-        .badge-status { padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-        .b-ok { background: rgba(46, 196, 182, 0.2); color: #2ec4b6; border: 1px solid #2ec4b6;}
-        .b-warn { background: rgba(255, 183, 3, 0.2); color: #ffb703; border: 1px solid #ffb703;}
-        .b-err { background: rgba(230, 57, 70, 0.2); color: #e63946; border: 1px solid #e63946;}
-        
-        /* CCTV Container */
-        .cctv-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 120px 120px; gap: 10px; }
-        .camera-box { background-color: #050505; border-radius: 6px; border: 1px solid #343a40; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;}
-        .cam-feed { width: 100%; height: 100%; border: none; background-color: #000;}
-        .cam-tag { position: absolute; top: 5px; left: 5px; background-color: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #fff; z-index: 2; pointer-events: none;}
-        .live-dot { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; background-color: #2ec4b6; border-radius: 50%; animation: blink 1s infinite; z-index: 2; pointer-events: none;}
-        
-        /* No Signal Cam (เมื่อเซนเซอร์ตรวจจับว่ากล้องพัง) */
-        .no-signal { background: #111; color: #e63946; font-weight: bold; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; height: 100%; justify-content: center;}
-        .no-signal::before { content: "⚠️"; font-size: 18px; }
-
-        /* Audio Control */
-        .audio-control-panel { background-color: #212529; padding: 15px; border-radius: 8px; border: 1px solid #343a40; flex: 1; display: flex; flex-direction: column;}
-        .zone-selector { background-color: #181b1f; padding: 10px; border-radius: 6px; border: 1px solid #3d4349; margin-bottom: 15px; flex: 1; overflow-y: auto;}
-        .zone-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #ced4da; margin-bottom: 8px; cursor: pointer;}
-        .btn-mic { background-color: #dc3545; color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px;}
-        .btn-mic:active { transform: scale(0.97); background-color: #a52834;}
-        
-        /* Empty Pages Templates */
-        .page-content { display: none; padding: 25px; background-color: #1a1d20; overflow-y: auto; flex: 1;}
-        
         @keyframes blink { 50% { opacity: 0; } }
         @keyframes soundwave { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        
+        /* Other pages hidden by default */
+        .page-content { display: none; padding: 25px; background-color: #1a1d20; overflow-y: auto; flex: 1;}
     </style>
 </head>
 <body>
 
   <header class="main-header">
-    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี ( go2rtc WebRTC )</h2>
-    <div class="system-status"><span id="clock">12:00:00</span> <span class="status-green">🟢 Master Server Online</span></div>
+    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี V5</h2>
+    <div class="system-status"><span id="clock">12:00:00</span> <span class="status-green">🟢 Server Online</span></div>
   </header>
 
   <div class="main-layout">
     <nav class="sidebar-menu">
       <button class="menu-item active" onclick="switchPage('dashboard', this)">🗺️ แผนที่ & กล้อง (LIVE)</button>
       <button class="menu-item" onclick="switchPage('audio', this)">🗓️ ตารางกระจายเสียง</button>
-      <button class="menu-item" onclick="switchPage('cctv', this)">🖥️ CCTV Video Wall</button>
       <button class="menu-item" onclick="switchPage('stats', this)">📊 สถิติสิ่งแวดล้อม</button>
       <button class="menu-item" onclick="switchPage('devices', this)">⚙️ จัดการอุปกรณ์ (Node)</button>
     </nav>
 
-    <div id="page-dashboard" style="display: contents;">
-        <section class="center-zone" id="center-map">
-            <button class="toggle-btn" id="toggleRight" onclick="toggleRightPanel()">▶</button>
-            
-            <div class="map-layer-controls">
-                <div style="color:#adb5bd; font-size:11px; margin-bottom: 5px; font-weight: bold;">📊 ชั้นข้อมูลเซนเซอร์:</div>
-                <button class="layer-btn active" onclick="setLayer('status', this)">🔵 สถานะ Node คอนโทรล</button>
-                <button class="layer-btn" onclick="setLayer('pm25', this)">😷 แผนที่ฝุ่น PM2.5 (ตำบล)</button>
-                <button class="layer-btn" onclick="setLayer('temp', this)">🌡️ แผนที่ความร้อนอุณหภูมิ</button>
+    <div id="page-dashboard" style="display: flex; flex: 1; min-width:0;">
+        <section class="center-zone">
+            <div style="flex:1; position: relative; display: flex;">
+                <div class="map-layer-controls">
+                    <div style="color:#adb5bd; font-size:11px; margin-bottom: 2px;">📊 ชั้นข้อมูลเซนเซอร์:</div>
+                    <button class="layer-btn active" onclick="setLayer('status', this)">🔵 สถานะ Node</button>
+                    <button class="layer-btn" onclick="setLayer('pm25', this)">😷 ฝุ่น PM2.5</button>
+                    <button class="layer-btn" onclick="setLayer('temp', this)">🌡️ อุณหภูมิ</button>
+                </div>
+                <div id="map"></div>
             </div>
-            <div id="map"></div>
+            
+            <div class="cctv-bottom-panel">
+                <div class="cctv-header">
+                    <span>📹 กล้องวงจรปิดเรียลไทม์ (WebRTC)</span>
+                    <span id="ui-cam-title" style="color:#0d6efd;">เลือกตำบลบนแผนที่...</span>
+                </div>
+                <div class="cctv-grid" id="cctv-grid">
+                    </div>
+            </div>
         </section>
 
-        <section class="right-zone" id="right-panel">
-            <div style="font-size: 15px; color: #ffffff; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 5px;">
-                📹 กล้องวงจรปิดเรียลไทม์ 
-                <span id="ui-cam-title" style="color:#0d6efd; font-size: 12px; float: right; font-weight: bold;">เลือกตำบล...</span>
+        <section class="right-zone">
+            
+            <div class="status-card">
+                <div class="card-title">🌐 สถานะเครือข่าย VPN (WireGuard)</div>
+                <div class="vpn-status"><span>สถานะ Tunnel:</span> <span style="color:#2ec4b6; font-weight:bold;">🟢 Connected</span></div>
+                <div class="vpn-status"><span>IP Address:</span> <span id="ui-vpn-ip" style="color:#fff;">10.0.1.x</span></div>
+                <div class="vpn-status"><span>Ping (Latency):</span> <span id="ui-vpn-ping" style="color:#fff;">12 ms</span></div>
+                <div class="vpn-status"><span>Data TX / RX:</span> <span style="color:#adb5bd;">1.2 Mbps / 4.5 Mbps</span></div>
+            </div>
+
+            <div class="status-card">
+                <div class="card-title">📋 รายงานสถานะจุดติดตั้ง</div>
+                <div style="font-size: 15px; color:#fff; margin-bottom: 10px;" id="ui-node-name">📍 เลือกจุดบนแผนที่</div>
+                <div style="font-size: 12px; margin-bottom: 12px;" id="ui-node-status">สถานะ: -</div>
+                
+                <div class="sensor-grid">
+                    <div class="sensor-item"><div style="font-size:11px; color:#adb5bd;">🌡️ อุณหภูมิ</div><div class="sensor-val" id="ui-temp">--°C</div></div>
+                    <div class="sensor-item"><div style="font-size:11px; color:#adb5bd;">💧 ความชื้น</div><div class="sensor-val" id="ui-hum">--%</div></div>
+                    <div class="sensor-item" style="grid-column: span 2;"><div style="font-size:11px; color:#adb5bd;">😷 ฝุ่น PM2.5</div><div class="sensor-val" id="ui-pm">-- µg/m³</div></div>
+                </div>
             </div>
             
-            <div class="cctv-container" id="cctv-grid">
-                </div>
-            
-            <div class="audio-control-panel">
-                <div style="font-size: 15px; color: #ffffff; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 10px;">📢 เลือกจุดกระจายเสียง (ตำบล)</div>
+            <div class="status-card" style="flex:1; display:flex; flex-direction:column;">
+                <div class="card-title">📢 แผงควบคุมเสียงประกาศ</div>
                 <div class="zone-selector" id="zone-checkboxes"></div>
                 <button class="btn-mic" onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()">
-                    <span id="mic-icon">🎙️</span> <span id="mic-text">กดค้างเพื่อพูด (Push-to-Talk)</span>
+                    <span id="mic-icon">🎙️</span> <span id="mic-text">กดค้างเพื่อพูด (PTT)</span>
                 </button>
             </div>
         </section>
     </div>
 
-    <div id="page-audio" class="page-content" style="grid-column: 2/4;"><h2>🗓️ ระบบจัดการตารางกระจายเสียงอัตโนมัติ...</h2></div>
-    <div id="page-cctv" class="page-content" style="grid-column: 2/4;"><h2>🖥️ CCTV Video Wall ดูพร้อมกันทุกตำบล...</h2></div>
-    <div id="page-stats" class="page-content" style="grid-column: 2/4;"><h2>📊 สถิติสิ่งแวดล้อม (ดึงจาก Time-Series Database)...</h2></div>
-    <div id="page-devices" class="page-content" style="grid-column: 2/4;"><h2>⚙️ ตรวจสอบสุขภาพบอร์ด STM32H7 ทุกระบบ...</h2></div>
+    <div id="page-audio" class="page-content" style="flex:1;"><h2>🗓️ ระบบจัดการตารางกระจายเสียงอัตโนมัติ</h2></div>
+    <div id="page-stats" class="page-content" style="flex:1;"><h2>📊 สถิติสิ่งแวดล้อม (Grafana Dashboard)</h2></div>
+    <div id="page-devices" class="page-content" style="flex:1;"><h2>⚙️ ตรวจสอบสุขภาพอุปกรณ์ (Health Monitor)</h2></div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // ดึงลิงก์คลาวด์แฟลร์ของคุณมาใช้งานเป็น Base URL สำหรับสตรีม
     const cloudflareUrl = "https://handbags-nitrogen-creator-appointment.trycloudflare.com";
 
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
 
-    // ฐานข้อมูลระดับตำบล 15 จุดจำลองสถานะคละเคล้ากล้องดี/เสียปนกัน
+    // สุ่ม Array สำหรับสลับกล้องไม่ให้ซ้ำกัน
+    function shuffleArray(array) {
+        let curId = array.length, randomId;
+        while (0 !== curId) {
+            randomId = Math.floor(Math.random() * curId);
+            curId -= 1;
+            let tmp = array[curId];
+            array[curId] = array[randomId];
+            array[randomId] = tmp;
+        }
+        return array;
+    }
+
     const nodes = [
-        { id: '1', name: "ต.หน้าเมือง", dist: "เมือง", lat: 13.5350, lng: 99.8190, ip: "10.0.1.11", status: "ok", temp: 33, hum: 55, pm: 25, cams: [1,1,1,1] }, // ดีหมดทุกกล้อง
-        { id: '2', name: "ต.เจดีย์หัก", dist: "เมือง", lat: 13.5500, lng: 99.8100, ip: "10.0.1.12", status: "warn", temp: 34, hum: 52, pm: 42, cams: [1,1,0,1] }, // กล้อง 3 พัง
+        { id: '1', name: "ต.หน้าเมือง", dist: "เมือง", lat: 13.5350, lng: 99.8190, ip: "10.0.1.11", status: "ok", temp: 33, hum: 55, pm: 25, cams: [1,1,1,1] },
+        { id: '2', name: "ต.เจดีย์หัก", dist: "เมือง", lat: 13.5500, lng: 99.8100, ip: "10.0.1.12", status: "warn", temp: 34, hum: 52, pm: 42, cams: [1,1,0,1] },
         { id: '3', name: "ต.ดอนตะโก", dist: "เมือง", lat: 13.5200, lng: 99.8000, ip: "10.0.1.13", status: "ok", temp: 32, hum: 60, pm: 22, cams: [1,1,1,1] },
-        { id: '4', name: "ต.เขาแร้ง", dist: "เมือง", lat: 13.5800, lng: 99.7500, ip: "10.0.1.14", status: "err", temp: "-", hum: "-", pm: "-", cams: [0,0,0,0] }, // Node ดับ กล้องดับหมด
+        { id: '4', name: "ต.เขาแร้ง", dist: "เมือง", lat: 13.5800, lng: 99.7500, ip: "10.0.1.14", status: "err", temp: "-", hum: "-", pm: "-", cams: [0,0,0,0] },
         
-        { id: '5', name: "ต.บ้านโป่ง", dist: "บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.2.11", status: "warn", temp: 35, hum: 50, pm: 55, cams: [1,0,0,1] }, // กล้อง 2,3 พัง
+        { id: '5', name: "ต.บ้านโป่ง", dist: "บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.2.11", status: "warn", temp: 35, hum: 50, pm: 55, cams: [1,0,0,1] },
         { id: '6', name: "ต.ท่าผา", dist: "บ้านโป่ง", lat: 13.8300, lng: 99.8600, ip: "10.0.2.12", status: "ok", temp: 34, hum: 52, pm: 28, cams: [1,1,1,1] },
         
         { id: '7', name: "ต.จอมบึง", dist: "จอมบึง", lat: 13.6210, lng: 99.5930, ip: "10.0.3.11", status: "ok", temp: 31, hum: 60, pm: 15, cams: [1,1,1,1] },
-        { id: '8', name: "ต.ด่านทับตะโก", dist: "จอมบึง", lat: 13.6600, lng: 99.5000, ip: "10.0.3.12", status: "warn", temp: 30, hum: 62, pm: 18, cams: [0,1,1,1] }, // กล้อง 1 พัง
+        { id: '8', name: "ต.ด่านทับตะโก", dist: "จอมบึง", lat: 13.6600, lng: 99.5000, ip: "10.0.3.12", status: "warn", temp: 30, hum: 62, pm: 18, cams: [0,1,1,1] },
         
         { id: '9', name: "ต.สวนผึ้ง", dist: "สวนผึ้ง", lat: 13.5410, lng: 99.3080, ip: "10.0.4.11", status: "ok", temp: 28, hum: 75, pm: 10, cams: [1,1,1,1] },
         { id: '10', name: "ต.ป่าหวาย", dist: "สวนผึ้ง", lat: 13.5000, lng: 99.4000, ip: "10.0.4.12", status: "err", temp: "-", hum: "-", pm: "-", cams: [0,0,0,0] },
         
         { id: '11', name: "ต.ดำเนินสะดวก", dist: "ดำเนินฯ", lat: 13.5180, lng: 99.9320, ip: "10.0.5.11", status: "ok", temp: 34, hum: 65, pm: 22, cams: [1,1,1,1] },
-        { id: '12', name: "ต.โพธาราม", dist: "โพธาราม", lat: 13.6930, lng: 99.8490, ip: "10.0.6.11", status: "ok", temp: 33, hum: 55, pm: 30, cams: [1,1,1,1] },
-        { id: '13', name: "ต.เจ็ดเสมียน", dist: "โพธาราม", lat: 13.6500, lng: 99.8300, ip: "10.0.6.12", status: "ok", temp: 33, hum: 58, pm: 25, cams: [1,1,1,1] },
-        { id: '14', name: "ต.บางแพ", dist: "บางแพ", lat: 13.6930, lng: 99.9320, ip: "10.0.7.11", status: "ok", temp: 32, hum: 60, pm: 20, cams: [1,1,1,1] },
-        { id: '15', name: "ต.ปากท่อ", dist: "ปากท่อ", lat: 13.3720, lng: 99.8430, ip: "10.0.8.11", status: "warn", temp: 37, hum: 50, pm: 18, cams: [1,1,1,0] } // กล้อง 4 พัง
+        { id: '12', name: "ต.โพธาราม", dist: "โพธาราม", lat: 13.6930, lng: 99.8490, ip: "10.0.6.11", status: "ok", temp: 33, hum: 55, pm: 30, cams: [1,1,1,1] }
     ];
 
-    var map = L.map('map').setView([13.6, 99.7], 10.5);
+    // กำหนดให้แต่ละโหนดมีรูปแบบการเรียงกล้อง (1-4) แบบสุ่ม เพื่อไม่ให้ภาพซ้ำกันเวลาคลิก
+    nodes.forEach(node => {
+        node.camSources = shuffleArray([1, 2, 3, 4]); 
+    });
+
+    var map = L.map('map').setView([13.6, 99.7], 10);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
     let currentLayer = 'status'; 
     const markerStore = {};
     const zoneContainer = document.getElementById('zone-checkboxes');
     const cctvGrid = document.getElementById('cctv-grid');
-    
-    // ฟังก์ชันย่อ-ขยาย แถบเมนูด้านขวา
-    function toggleRightPanel() {
-        const rightPanel = document.getElementById('right-panel');
-        const toggleBtn = document.getElementById('toggleRight');
-        rightPanel.classList.toggle('collapsed');
-        toggleBtn.classList.toggle('collapsed');
-        toggleBtn.innerText = rightPanel.classList.contains('collapsed') ? "◀" : "▶";
-        setTimeout(() => map.invalidateSize(), 300);
-    }
 
     function getAqiColorClass(pm) {
         if(pm === "-") return 'aqi-bad';
@@ -208,54 +223,58 @@
 
     const speakingIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#dc3545; width:22px; height:22px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-size:12px; animation: soundwave 1s infinite;'>📢</div>", iconSize: [22, 22], iconAnchor: [11, 11] });
 
-    // ฟังก์ชันยิงวิดีโอสด go2rtc ผสานกับระบบตรวจจับกล้องพัง
-    function renderCCTV(node) {
-        document.getElementById('ui-cam-title').innerText = `📍 ${node.name} (อ.${node.dist})`;
+    // ฟังก์ชันอัปเดตหน้าจอทั้งหมดเมื่อคลิกหมุด
+    function updateDashboardUI(node) {
+        // 1. อัปเดตกล้อง (สุ่มดึงสตรีมตามที่ผูกไว้)
+        document.getElementById('ui-cam-title').innerText = `📍 ตำแหน่ง: ${node.name} (อ.${node.dist})`;
         cctvGrid.innerHTML = "";
         
         for(let i=0; i<4; i++) {
             if(node.cams[i] === 1) { 
-                // กล้องปกติ: เรียกผ่านชื่อ Stream ตรงๆ จาก YAML ปลอดภัยร้อยเปอร์เซ็นต์ บังคับโหมด WebRTC ดีเลย์ต่ำสุด
+                // ใช้ลำดับกล้องที่สุ่มไว้ (1-4) ทำให้ภาพแต่ละ Node เรียงไม่เหมือนกัน
+                let streamIndex = node.camSources[i]; 
                 cctvGrid.innerHTML += `
                     <div class="camera-box">
-                        <span class="cam-tag">CAM 0${i+1} - LIVE</span><span class="live-dot"></span>
+                        <span class="cam-tag">CAM 0${i+1}</span><span class="live-dot"></span>
                         <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
-                            src="${cloudflareUrl}/stream.html?src=cam${i+1}&mode=webrtc">
+                            src="${cloudflareUrl}/stream.html?src=cam${streamIndex}&mode=webrtc">
                         </iframe>
                     </div>`;
             } else { 
-                // กล้องพัง: สลับไปโชว์หน้าจอ Error แจ้งเตือนเจ้าหน้าที่
                 cctvGrid.innerHTML += `
                     <div class="camera-box">
-                        <span class="cam-tag" style="background:#e63946;">CAM 0${i+1} FAILURE</span>
-                        <div class="no-signal">NO SIGNAL<br>สัญญาณกล้องขาดหาย</div>
+                        <span class="cam-tag" style="background:#e63946;">CAM 0${i+1} ERROR</span>
+                        <div class="no-signal">⚠️<br>NO SIGNAL</div>
                     </div>`;
             }
         }
+
+        // 2. อัปเดตฝั่งขวา (รายงานสถานะ Node & เซนเซอร์)
+        document.getElementById('ui-node-name').innerText = `📍 ${node.name} (อ.${node.dist})`;
+        
+        let statusHtml = node.status === 'ok' ? `<span style="color:#2ec4b6">🟢 ออนไลน์ (ทำงานปกติ)</span>` : (node.status === 'warn' ? `<span style="color:#ffb703">🟡 มีอุปกรณ์แจ้งเตือนขัดข้อง</span>` : `<span style="color:#e63946">🔴 ออฟไลน์ (ขาดการติดต่อ)</span>`);
+        document.getElementById('ui-node-status').innerHTML = `สถานะ: ${statusHtml}`;
+        
+        document.getElementById('ui-temp').innerText = node.status === 'err' ? "--°C" : `${node.temp}°C`;
+        document.getElementById('ui-hum').innerText = node.status === 'err' ? "--%" : `${node.hum}%`;
+        
+        let pmEl = document.getElementById('ui-pm');
+        pmEl.innerText = node.status === 'err' ? "-- µg/m³" : `${node.pm} µg/m³`;
+        if(node.pm > 37) pmEl.classList.add("danger"); else pmEl.classList.remove("danger");
+
+        // 3. อัปเดตฝั่งขวา (รายงานสถานะ VPN)
+        document.getElementById('ui-vpn-ip').innerText = node.ip;
+        document.getElementById('ui-vpn-ping').innerText = node.status === 'err' ? "Timeout" : Math.floor(Math.random() * 15 + 10) + " ms";
     }
 
-    // เจนหมุดลงแผนที่และแยก Checkbox โซนอำเภอ
     let currentDistrict = "";
     nodes.forEach(node => {
         var marker = L.marker([node.lat, node.lng], {icon: createIcon(node, 'status')}).addTo(map);
         markerStore[node.id] = { marker: marker, data: node };
 
-        let badge = node.status === 'ok' ? `<span class="badge-status b-ok">🟢 ปกติ</span>` : (node.status === 'warn' ? `<span class="badge-status b-warn">🟡 กล้องขัดข้อง</span>` : `<span class="badge-status b-err">🔴 Node ดับ</span>`);
-
-        let popupContent = `
-            <div class="popup-custom">
-                <h4>${node.name} ${badge}</h4>
-                <div class="popup-grid">
-                    <div class="popup-item">🌡️ ${node.temp}°C</div>
-                    <div class="popup-item">💧 ${node.hum}%</div>
-                    <div class="popup-item" style="grid-column: span 2; color:${node.pm > 37 ? '#e63946' : '#2ec4b6'}">😷 PM 2.5: <b>${node.pm}</b> µg/m³</div>
-                </div>
-            </div>`;
-        marker.bindPopup(popupContent);
-
+        // ลบ Popup ออก เพื่อบังคับให้ผู้ใช้ดูข้อมูลที่แถบด้านขวาแทน (สะอาดตาขึ้น)
         marker.on('click', () => {
-            renderCCTV(node);
-            if(document.getElementById('right-panel').classList.contains('collapsed')) toggleRightPanel();
+            updateDashboardUI(node);
         });
 
         if(currentDistrict !== node.dist) {
@@ -268,9 +287,8 @@
         zoneContainer.innerHTML += `<label class="zone-label" style="color:${labelColor}"><input type="checkbox" class="zone-cb" value="${node.id}" ${isChecked}> ${node.name}</label>`;
     });
 
-    renderCCTV(nodes[0]); // โหลด Node แรกเปิดระบบ
+    updateDashboardUI(nodes[0]); // โหลดข้อมูล Node แรก
 
-    // เปลี่ยนโหมดเลเยอร์ข้อมูลแผนที่
     function setLayer(type, btn) {
         document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -278,11 +296,10 @@
         Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, type)); });
     }
 
-    // ปุ่มไมค์กระจายเสียงแบบ Real-time
     function startSpeak() {
         document.querySelector('.btn-mic').style.backgroundColor = "#ffc107"; 
         document.querySelector('.btn-mic').style.color = "#000";
-        document.getElementById('mic-text').innerText = "🔴 กำลังส่งสัญญาณประกาศเสียง...";
+        document.getElementById('mic-text').innerText = "🔴 กำลังประกาศเสียง...";
         document.querySelectorAll('.zone-cb').forEach(cb => {
             if(cb.checked && !cb.disabled) markerStore[cb.value].marker.setIcon(speakingIcon);
         });
@@ -291,18 +308,17 @@
     function stopSpeak() {
         document.querySelector('.btn-mic').style.backgroundColor = "#dc3545"; 
         document.querySelector('.btn-mic').style.color = "#fff";
-        document.getElementById('mic-text').innerText = "กดค้างเพื่อพูด (Push-to-Talk)";
+        document.getElementById('mic-text').innerText = "กดค้างเพื่อพูด (PTT)";
         Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, currentLayer)); });
     }
 
-    // สลับหน้าเมนูซ้าย
     function switchPage(pageId, btn) {
         document.getElementById('page-dashboard').style.display = 'none';
         document.querySelectorAll('.page-content').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
         
         if(pageId === 'dashboard') {
-            document.getElementById('page-dashboard').style.display = 'contents';
+            document.getElementById('page-dashboard').style.display = 'flex';
             setTimeout(() => map.invalidateSize(), 100);
         } else {
             document.getElementById('page-' + pageId).style.display = 'block';
