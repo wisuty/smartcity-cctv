@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart City Command Center - Ratchaburi</title>
+    <title>Smart City Command Center - Ratchaburi V4 (LIVE)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -16,11 +16,17 @@
         .status-green { color: #2ec4b6; font-weight: bold; background: rgba(46, 196, 182, 0.1); padding: 5px 10px; border-radius: 20px;}
         
         /* Layout */
-        .main-layout { display: flex; flex: 1; height: calc(100vh - 60px); }
-        .sidebar-menu { width: 220px; background-color: #181b1f; border-right: 1px solid #343a40; padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;}
-        .center-zone { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
-        .right-zone { width: 380px; padding: 15px; display: flex; flex-direction: column; gap: 15px; background-color: #1a1d20; border-left: 1px solid #343a40; flex-shrink: 0; overflow-y: auto;}
+        .main-layout { display: flex; flex: 1; height: calc(100vh - 60px); position: relative;}
+        .sidebar-menu { width: 220px; background-color: #181b1f; border-right: 1px solid #343a40; padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; z-index: 10;}
+        .center-zone { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; transition: 0.3s;}
         
+        /* Right Zone & Toggle */
+        .right-zone { width: 380px; padding: 15px; display: flex; flex-direction: column; gap: 15px; background-color: #1a1d20; border-left: 1px solid #343a40; overflow-y: auto; transition: 0.3s ease-in-out;}
+        .right-zone.collapsed { width: 0; padding: 0; border: none; overflow: hidden; opacity: 0;}
+        .toggle-btn { position: absolute; top: 50%; right: 380px; transform: translateY(-50%); background: #0d6efd; color: white; border: none; width: 25px; height: 50px; border-radius: 8px 0 0 8px; cursor: pointer; z-index: 1000; display: flex; justify-content: center; align-items: center; font-size: 12px; transition: 0.3s ease-in-out; box-shadow: -2px 0 5px rgba(0,0,0,0.3);}
+        .toggle-btn.collapsed { right: 0; background: #343a40;}
+        .toggle-btn:hover { filter: brightness(1.2); }
+
         /* Menu */
         .menu-item { background: none; border: none; color: #adb5bd; padding: 12px 10px; text-align: left; font-size: 14px; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
         .menu-item:hover { background-color: #2c3036; color: #ffffff; }
@@ -28,52 +34,47 @@
         
         /* Map & Layers */
         #map { flex: 1; width: 100%; background-color: #2b3035; z-index: 1;}
-        .map-layer-controls { position: absolute; top: 15px; left: 50px; z-index: 1000; display: flex; gap: 10px; background: rgba(24,27,31,0.8); padding: 8px; border-radius: 8px; backdrop-filter: blur(4px); border: 1px solid #343a40;}
-        .layer-btn { background: #212529; color: #adb5bd; border: 1px solid #3d4349; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: 0.2s;}
+        .map-layer-controls { position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; background: rgba(24,27,31,0.85); padding: 10px; border-radius: 8px; backdrop-filter: blur(4px); border: 1px solid #343a40;}
+        .layer-btn { background: #212529; color: #adb5bd; border: 1px solid #3d4349; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: 0.2s; text-align: left;}
         .layer-btn.active { background: #0d6efd; color: #fff; font-weight: bold; border-color: #0d6efd;}
 
-        /* Data Markers */
+        /* Data Markers (Custom Icons) */
         .data-marker { display: flex; justify-content: center; align-items: center; border-radius: 50%; color: #000; font-weight: bold; font-size: 12px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); width: 30px !important; height: 30px !important; margin-left: -15px !important; margin-top: -15px !important; }
         .aqi-good { background-color: #2ec4b6; } .aqi-mod { background-color: #ffb703; } .aqi-bad { background-color: #fb8500; } .aqi-danger { background-color: #e63946; color: #fff;}
         .temp-marker { background-color: #4cc9f0; }
 
         /* Popup */
-        .leaflet-popup-content-wrapper { background-color: #212529; color: #e9ecef; border: 1px solid #3d4349; border-radius: 8px; }
+        .leaflet-popup-content-wrapper { background-color: #212529; color: #e9ecef; border: 1px solid #3d4349; border-radius: 8px; width: 220px; }
         .leaflet-popup-tip { background-color: #212529; }
-        .popup-custom { font-family: 'Segoe UI', sans-serif; font-size: 14px; }
-        .popup-custom h4 { color: #0d6efd; margin-bottom: 8px; border-bottom: 1px solid #3d4349; padding-bottom: 5px;}
+        .popup-custom h4 { color: #0d6efd; margin-bottom: 5px; border-bottom: 1px solid #3d4349; padding-bottom: 5px; display: flex; justify-content: space-between;}
         .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .popup-item { background: #1a1d20; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #343a40; }
+        .popup-item { background: #1a1d20; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #343a40; font-size: 12px; }
+        .badge-status { padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+        .b-ok { background: rgba(46, 196, 182, 0.2); color: #2ec4b6; border: 1px solid #2ec4b6;}
+        .b-warn { background: rgba(255, 183, 3, 0.2); color: #ffb703; border: 1px solid #ffb703;}
+        .b-err { background: rgba(230, 57, 70, 0.2); color: #e63946; border: 1px solid #e63946;}
         
-        /* CCTV */
-        .cctv-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 140px 140px; gap: 10px; }
-        .camera-box { background-color: #000; border-radius: 6px; border: 1px solid #343a40; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;}
-        /* เปลี่ยน CSS ของกล้องให้รองรับ Iframe */
-        .cam-feed { width: 100%; height: 100%; object-fit: cover; border: none; }
+        /* CCTV Container */
+        .cctv-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 120px 120px; gap: 10px; }
+        .camera-box { background-color: #050505; border-radius: 6px; border: 1px solid #343a40; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;}
+        .cam-feed { width: 100%; height: 100%; border: none; background-color: #000;}
         .cam-tag { position: absolute; top: 5px; left: 5px; background-color: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #fff; z-index: 2; pointer-events: none;}
-        .live-dot { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; background-color: #e63946; border-radius: 50%; animation: blink 1s infinite; z-index: 2; pointer-events: none;}
+        .live-dot { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; background-color: #2ec4b6; border-radius: 50%; animation: blink 1s infinite; z-index: 2; pointer-events: none;}
         
+        /* No Signal Cam (เมื่อเซนเซอร์ตรวจจับว่ากล้องพัง) */
+        .no-signal { background: #111; color: #e63946; font-weight: bold; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; height: 100%; justify-content: center;}
+        .no-signal::before { content: "⚠️"; font-size: 18px; }
+
         /* Audio Control */
-        .audio-control-panel { background-color: #212529; padding: 15px; border-radius: 8px; border: 1px solid #343a40; }
-        .zone-selector { background-color: #181b1f; padding: 10px; border-radius: 6px; border: 1px solid #3d4349; margin-bottom: 15px; max-height: 150px; overflow-y: auto;}
+        .audio-control-panel { background-color: #212529; padding: 15px; border-radius: 8px; border: 1px solid #343a40; flex: 1; display: flex; flex-direction: column;}
+        .zone-selector { background-color: #181b1f; padding: 10px; border-radius: 6px; border: 1px solid #3d4349; margin-bottom: 15px; flex: 1; overflow-y: auto;}
         .zone-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #ced4da; margin-bottom: 8px; cursor: pointer;}
         .btn-mic { background-color: #dc3545; color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px;}
         .btn-mic:active { transform: scale(0.97); background-color: #a52834;}
         
-        /* Pages & Tables */
+        /* Empty Pages Templates */
         .page-content { display: none; padding: 25px; background-color: #1a1d20; overflow-y: auto; flex: 1;}
-        .page-title { color: #0d6efd; margin-bottom: 20px; font-size: 20px; display: flex; align-items: center; gap: 10px;}
-        .data-table { width: 100%; border-collapse: collapse; background: #212529; border-radius: 8px; overflow: hidden; border: 1px solid #343a40;}
-        .data-table th { background: #2c3036; padding: 12px; text-align: left; color: #adb5bd; font-size: 14px;}
-        .data-table td { padding: 12px; border-top: 1px solid #343a40; font-size: 14px;}
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;}
-        .badge-online { background: rgba(46, 196, 182, 0.2); color: #2ec4b6; border: 1px solid #2ec4b6;}
-        .badge-offline { background: rgba(230, 57, 70, 0.2); color: #e63946; border: 1px solid #e63946;}
-
-        /* Video Wall Grid */
-        .video-wall { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .video-wall .camera-box { height: 220px; }
-
+        
         @keyframes blink { 50% { opacity: 0; } }
         @keyframes soundwave { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
     </style>
@@ -81,11 +82,8 @@
 <body>
 
   <header class="main-header">
-    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี</h2>
-    <div class="system-status">
-        <span id="clock">12:00:00</span>
-        <span class="status-green">🟢 Master Server Online</span>
-    </div>
+    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี ( go2rtc WebRTC )</h2>
+    <div class="system-status"><span id="clock">12:00:00</span> <span class="status-green">🟢 Master Server Online</span></div>
   </header>
 
   <div class="main-layout">
@@ -98,47 +96,29 @@
     </nav>
 
     <div id="page-dashboard" style="display: contents;">
-        <section class="center-zone">
+        <section class="center-zone" id="center-map">
+            <button class="toggle-btn" id="toggleRight" onclick="toggleRightPanel()">▶</button>
+            
             <div class="map-layer-controls">
-                <button class="layer-btn active" onclick="setLayer('status', this)">🔵 สถานะ Node</button>
-                <button class="layer-btn" onclick="setLayer('pm25', this)">😷 แผนที่ฝุ่น PM2.5</button>
-                <button class="layer-btn" onclick="setLayer('temp', this)">🌡️ แผนที่ความร้อน</button>
+                <div style="color:#adb5bd; font-size:11px; margin-bottom: 5px; font-weight: bold;">📊 ชั้นข้อมูลเซนเซอร์:</div>
+                <button class="layer-btn active" onclick="setLayer('status', this)">🔵 สถานะ Node คอนโทรล</button>
+                <button class="layer-btn" onclick="setLayer('pm25', this)">😷 แผนที่ฝุ่น PM2.5 (ตำบล)</button>
+                <button class="layer-btn" onclick="setLayer('temp', this)">🌡️ แผนที่ความร้อนอุณหภูมิ</button>
             </div>
             <div id="map"></div>
         </section>
 
-        <section class="right-zone">
-            <div style="font-size: 15px; color: #ffffff; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 5px;">📹 กล้องวงจรปิดรอบจุดติดตั้ง (WebRTC)</div>
-            
-            <div class="cctv-container">
-                <div class="camera-box">
-                    <span class="cam-tag">CAM 01</span><span class="live-dot"></span>
-                    <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
-                        src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[10.10.10.11]/cam/realmonitor?channel=1%26subtype=1">
-                    </iframe>
-                </div>
-                <div class="camera-box">
-                    <span class="cam-tag">CAM 02</span><span class="live-dot"></span>
-                    <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
-                        src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[10.10.10.12]/cam/realmonitor?channel=1%26subtype=1">
-                    </iframe>
-                </div>
-                <div class="camera-box">
-                    <span class="cam-tag">CAM 03</span><span class="live-dot"></span>
-                    <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
-                        src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[10.10.10.13]/cam/realmonitor?channel=1%26subtype=1">
-                    </iframe>
-                </div>
-                <div class="camera-box">
-                    <span class="cam-tag">CAM 04</span><span class="live-dot"></span>
-                    <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
-                        src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[10.10.10.14]/cam/realmonitor?channel=1%26subtype=1">
-                    </iframe>
-                </div>
+        <section class="right-zone" id="right-panel">
+            <div style="font-size: 15px; color: #ffffff; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 5px;">
+                📹 กล้องวงจรปิดเรียลไทม์ 
+                <span id="ui-cam-title" style="color:#0d6efd; font-size: 12px; float: right; font-weight: bold;">เลือกตำบล...</span>
             </div>
             
+            <div class="cctv-container" id="cctv-grid">
+                </div>
+            
             <div class="audio-control-panel">
-                <div style="font-size: 15px; color: #ffffff; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 10px;">📢 แผงควบคุมการประกาศเสียง</div>
+                <div style="font-size: 15px; color: #ffffff; border-bottom: 1px solid #343a40; padding-bottom: 8px; margin-bottom: 10px;">📢 เลือกจุดกระจายเสียง (ตำบล)</div>
                 <div class="zone-selector" id="zone-checkboxes"></div>
                 <button class="btn-mic" onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()">
                     <span id="mic-icon">🎙️</span> <span id="mic-text">กดค้างเพื่อพูด (Push-to-Talk)</span>
@@ -147,93 +127,62 @@
         </section>
     </div>
 
-    <div id="page-audio" class="page-content" style="grid-column: 2 / 4;">
-        <h2 class="page-title">🗓️ ตารางกระจายเสียงอัตโนมัติ</h2>
-        <table class="data-table">
-            <tr><th>เวลาทำงาน</th><th>ชื่อไฟล์เสียง</th><th>โซนเป้าหมาย</th><th>วนซ้ำ</th><th>สถานะ</th></tr>
-            <tr><td>08:00 น.</td><td>national_anthem.mp3</td><td>ทุกอำเภอ (10 Nodes)</td><td>ทุกวัน</td><td><span class="badge badge-online">ทำงาน</span></td></tr>
-            <tr><td>12:00 น.</td><td>covid_warning.wav</td><td>อ.เมือง, อ.บ้านโป่ง</td><td>จ.-ศ.</td><td><span class="badge badge-online">ทำงาน</span></td></tr>
-            <tr><td>18:00 น.</td><td>national_anthem.mp3</td><td>ทุกอำเภอ (10 Nodes)</td><td>ทุกวัน</td><td><span class="badge badge-online">ทำงาน</span></td></tr>
-        </table>
-        <button style="margin-top: 15px; padding: 10px 20px; background: #0d6efd; color: #fff; border: none; border-radius: 6px; cursor: pointer;">+ เพิ่มตารางเสียงใหม่</button>
-    </div>
-
-    <div id="page-cctv" class="page-content" style="grid-column: 2 / 4;">
-        <h2 class="page-title">🖥️ ระบบตรวจสอบภาพรวม (Video Wall WebRTC)</h2>
-        <div class="video-wall">
-            <div class="camera-box">
-                <span class="cam-tag">CH 01 - แยกเมือง</span><span class="live-dot"></span>
-                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่1]/cam/realmonitor?channel=1%26subtype=1"></iframe>
-            </div>
-            <div class="camera-box">
-                <span class="cam-tag">CH 02 - ตลาดบ้านโป่ง</span><span class="live-dot"></span>
-                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่2]/cam/realmonitor?channel=1%26subtype=1"></iframe>
-            </div>
-            <div class="camera-box">
-                <span class="cam-tag">CH 03 - หน้าอำเภอสวนผึ้ง</span><span class="live-dot"></span>
-                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่3]/cam/realmonitor?channel=1%26subtype=1"></iframe>
-            </div>
-            <div class="camera-box">
-                <span class="cam-tag">CH 04 - ตลาดน้ำดำเนินฯ</span><span class="live-dot"></span>
-                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่4]/cam/realmonitor?channel=1%26subtype=1"></iframe>
-            </div>
-            <div class="camera-box">
-                <span class="cam-tag">CH 05 - แยกปากท่อ</span><span class="live-dot"></span>
-                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่5]/cam/realmonitor?channel=1%26subtype=1"></iframe>
-            </div>
-            <div class="camera-box">
-                <span class="cam-tag">CH 06 - ชุมชนโพธาราม</span><span class="live-dot"></span>
-                <iframe class="cam-feed" allow="autoplay; fullscreen" muted src="https://handbags-nitrogen-creator-appointment.trycloudflare.com/stream.html?src=rtsp://admin:P@ssw0rd2025@[ใส่_IP_กล้อง_ตัวที่6]/cam/realmonitor?channel=1%26subtype=1"></iframe>
-            </div>
-        </div>
-    </div>
-
-    <div id="page-stats" class="page-content" style="grid-column: 2 / 4;">
-        <h2 class="page-title">📊 สถิติสิ่งแวดล้อมเชิงลึก (ดึงจาก InfluxDB)</h2>
-        <div style="background: #212529; padding: 20px; border-radius: 8px; border: 1px solid #343a40; text-align: center; color: #6c757d; height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <div style="font-size: 40px; margin-bottom: 15px;">📈</div>
-            <h3>พื้นที่สำหรับฝัง (Embed) หน้าจอ Grafana</h3>
-            <p style="margin-top: 10px; font-size: 14px;">เจ้าหน้าที่จะสามารถดูกราฟ PM2.5 และอุณหภูมิย้อนหลัง 1 เดือนได้ที่นี่</p>
-        </div>
-    </div>
-
-    <div id="page-devices" class="page-content" style="grid-column: 2 / 4;">
-        <h2 class="page-title">⚙️ สถานะบอร์ดคอนโทรล (STM32H7 Nodes)</h2>
-        <table class="data-table">
-            <tr><th>รหัสจุดติดตั้ง</th><th>IP Address (VPN)</th><th>Ping (ms)</th><th>อุณหบอร์ด</th><th>สถานะเครือข่าย</th><th>คำสั่งจัดการ</th></tr>
-            <tr><td>อ.เมืองราชบุรี</td><td>10.0.0.11</td><td>12 ms</td><td>45°C</td><td><span class="badge badge-online">เชื่อมต่อ</span></td><td><button class="layer-btn">Reboot</button></td></tr>
-            <tr><td>อ.บ้านโป่ง</td><td>10.0.0.15</td><td>15 ms</td><td>48°C</td><td><span class="badge badge-online">เชื่อมต่อ</span></td><td><button class="layer-btn">Reboot</button></td></tr>
-            <tr style="background: rgba(230,57,70,0.1);"><td>อ.สวนผึ้ง</td><td>10.0.0.13</td><td>-</td><td>-</td><td><span class="badge badge-offline">ขาดการติดต่อ 2 ชม.</span></td><td><button class="layer-btn">ตรวจสอบ</button></td></tr>
-        </table>
-    </div>
-
+    <div id="page-audio" class="page-content" style="grid-column: 2/4;"><h2>🗓️ ระบบจัดการตารางกระจายเสียงอัตโนมัติ...</h2></div>
+    <div id="page-cctv" class="page-content" style="grid-column: 2/4;"><h2>🖥️ CCTV Video Wall ดูพร้อมกันทุกตำบล...</h2></div>
+    <div id="page-stats" class="page-content" style="grid-column: 2/4;"><h2>📊 สถิติสิ่งแวดล้อม (ดึงจาก Time-Series Database)...</h2></div>
+    <div id="page-devices" class="page-content" style="grid-column: 2/4;"><h2>⚙️ ตรวจสอบสุขภาพบอร์ด STM32H7 ทุกระบบ...</h2></div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // ดึงลิงก์คลาวด์แฟลร์ของคุณมาใช้งานเป็น Base URL สำหรับสตรีม
+    const cloudflareUrl = "https://handbags-nitrogen-creator-appointment.trycloudflare.com";
+
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
 
+    // ฐานข้อมูลระดับตำบล 15 จุดจำลองสถานะคละเคล้ากล้องดี/เสียปนกัน
     const nodes = [
-        { id: '1', name: "อ.เมืองราชบุรี", lat: 13.5350, lng: 99.8190, ip: "10.0.0.11", temp: 33, hum: 55, pm: 25 },
-        { id: '2', name: "อ.จอมบึง", lat: 13.6210, lng: 99.5930, ip: "10.0.0.12", temp: 31, hum: 60, pm: 15 },
-        { id: '3', name: "อ.สวนผึ้ง", lat: 13.5410, lng: 99.3080, ip: "10.0.0.13", temp: 28, hum: 75, pm: 10 },
-        { id: '4', name: "อ.ดำเนินสะดวก", lat: 13.5180, lng: 99.9320, ip: "10.0.0.14", temp: 34, hum: 65, pm: 22 },
-        { id: '5', name: "อ.บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.0.15", temp: 35, hum: 50, pm: 55 }, 
-        { id: '6', name: "อ.บางแพ", lat: 13.6930, lng: 99.9320, ip: "10.0.0.16", temp: 33, hum: 55, pm: 30 },
-        { id: '7', name: "อ.โพธาราม", lat: 13.6930, lng: 99.8490, ip: "10.0.0.17", temp: 34, hum: 52, pm: 42 },
-        { id: '8', name: "อ.ปากท่อ", lat: 13.3720, lng: 99.8430, ip: "10.0.0.18", temp: 32, hum: 58, pm: 18 },
-        { id: '9', name: "อ.วัดเพลง", lat: 13.4380, lng: 99.8890, ip: "10.0.0.19", temp: 33, hum: 60, pm: 21 },
-        { id: '10', name: "อ.บ้านคา", lat: 13.4210, lng: 99.4210, ip: "10.0.0.20", temp: 29, hum: 70, pm: 12 }
+        { id: '1', name: "ต.หน้าเมือง", dist: "เมือง", lat: 13.5350, lng: 99.8190, ip: "10.0.1.11", status: "ok", temp: 33, hum: 55, pm: 25, cams: [1,1,1,1] }, // ดีหมดทุกกล้อง
+        { id: '2', name: "ต.เจดีย์หัก", dist: "เมือง", lat: 13.5500, lng: 99.8100, ip: "10.0.1.12", status: "warn", temp: 34, hum: 52, pm: 42, cams: [1,1,0,1] }, // กล้อง 3 พัง
+        { id: '3', name: "ต.ดอนตะโก", dist: "เมือง", lat: 13.5200, lng: 99.8000, ip: "10.0.1.13", status: "ok", temp: 32, hum: 60, pm: 22, cams: [1,1,1,1] },
+        { id: '4', name: "ต.เขาแร้ง", dist: "เมือง", lat: 13.5800, lng: 99.7500, ip: "10.0.1.14", status: "err", temp: "-", hum: "-", pm: "-", cams: [0,0,0,0] }, // Node ดับ กล้องดับหมด
+        
+        { id: '5', name: "ต.บ้านโป่ง", dist: "บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.2.11", status: "warn", temp: 35, hum: 50, pm: 55, cams: [1,0,0,1] }, // กล้อง 2,3 พัง
+        { id: '6', name: "ต.ท่าผา", dist: "บ้านโป่ง", lat: 13.8300, lng: 99.8600, ip: "10.0.2.12", status: "ok", temp: 34, hum: 52, pm: 28, cams: [1,1,1,1] },
+        
+        { id: '7', name: "ต.จอมบึง", dist: "จอมบึง", lat: 13.6210, lng: 99.5930, ip: "10.0.3.11", status: "ok", temp: 31, hum: 60, pm: 15, cams: [1,1,1,1] },
+        { id: '8', name: "ต.ด่านทับตะโก", dist: "จอมบึง", lat: 13.6600, lng: 99.5000, ip: "10.0.3.12", status: "warn", temp: 30, hum: 62, pm: 18, cams: [0,1,1,1] }, // กล้อง 1 พัง
+        
+        { id: '9', name: "ต.สวนผึ้ง", dist: "สวนผึ้ง", lat: 13.5410, lng: 99.3080, ip: "10.0.4.11", status: "ok", temp: 28, hum: 75, pm: 10, cams: [1,1,1,1] },
+        { id: '10', name: "ต.ป่าหวาย", dist: "สวนผึ้ง", lat: 13.5000, lng: 99.4000, ip: "10.0.4.12", status: "err", temp: "-", hum: "-", pm: "-", cams: [0,0,0,0] },
+        
+        { id: '11', name: "ต.ดำเนินสะดวก", dist: "ดำเนินฯ", lat: 13.5180, lng: 99.9320, ip: "10.0.5.11", status: "ok", temp: 34, hum: 65, pm: 22, cams: [1,1,1,1] },
+        { id: '12', name: "ต.โพธาราม", dist: "โพธาราม", lat: 13.6930, lng: 99.8490, ip: "10.0.6.11", status: "ok", temp: 33, hum: 55, pm: 30, cams: [1,1,1,1] },
+        { id: '13', name: "ต.เจ็ดเสมียน", dist: "โพธาราม", lat: 13.6500, lng: 99.8300, ip: "10.0.6.12", status: "ok", temp: 33, hum: 58, pm: 25, cams: [1,1,1,1] },
+        { id: '14', name: "ต.บางแพ", dist: "บางแพ", lat: 13.6930, lng: 99.9320, ip: "10.0.7.11", status: "ok", temp: 32, hum: 60, pm: 20, cams: [1,1,1,1] },
+        { id: '15', name: "ต.ปากท่อ", dist: "ปากท่อ", lat: 13.3720, lng: 99.8430, ip: "10.0.8.11", status: "warn", temp: 37, hum: 50, pm: 18, cams: [1,1,1,0] } // กล้อง 4 พัง
     ];
 
-    var map = L.map('map').setView([13.55, 99.7], 10);
+    var map = L.map('map').setView([13.6, 99.7], 10.5);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
     let currentLayer = 'status'; 
     const markerStore = {};
     const zoneContainer = document.getElementById('zone-checkboxes');
+    const cctvGrid = document.getElementById('cctv-grid');
+    
+    // ฟังก์ชันย่อ-ขยาย แถบเมนูด้านขวา
+    function toggleRightPanel() {
+        const rightPanel = document.getElementById('right-panel');
+        const toggleBtn = document.getElementById('toggleRight');
+        rightPanel.classList.toggle('collapsed');
+        toggleBtn.classList.toggle('collapsed');
+        toggleBtn.innerText = rightPanel.classList.contains('collapsed') ? "◀" : "▶";
+        setTimeout(() => map.invalidateSize(), 300);
+    }
 
     function getAqiColorClass(pm) {
+        if(pm === "-") return 'aqi-bad';
         if(pm <= 25) return 'aqi-good';
         if(pm <= 37) return 'aqi-mod';
         if(pm <= 50) return 'aqi-bad';
@@ -243,27 +192,59 @@
     function createIcon(node, type) {
         let htmlContent = "";
         if(type === 'status') {
-            htmlContent = "<div style='background-color:#0d6efd; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px #0d6efd;'></div>";
+            let color = node.status === 'ok' ? '#2ec4b6' : (node.status === 'warn' ? '#ffb703' : '#e63946');
+            htmlContent = `<div style='background-color:${color}; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px ${color};'></div>`;
             return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [16, 16], iconAnchor: [8, 8] });
         } else if(type === 'pm25') {
-            let colorClass = getAqiColorClass(node.pm);
+            let colorClass = node.status === 'err' ? 'aqi-bad' : getAqiColorClass(node.pm);
             htmlContent = `<div class="data-marker ${colorClass}">${node.pm}</div>`;
             return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [30, 30], iconAnchor: [15, 15] });
         } else if(type === 'temp') {
-            htmlContent = `<div class="data-marker temp-marker">${node.temp}°</div>`;
+            let tempShow = node.status === 'err' ? '-' : `${node.temp}°`;
+            htmlContent = `<div class="data-marker temp-marker" style="${node.status==='err'?'background:#6c757d;':''}">${tempShow}</div>`;
             return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [30, 30], iconAnchor: [15, 15] });
         }
     }
 
     const speakingIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#dc3545; width:22px; height:22px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-size:12px; animation: soundwave 1s infinite;'>📢</div>", iconSize: [22, 22], iconAnchor: [11, 11] });
 
+    // ฟังก์ชันยิงวิดีโอสด go2rtc ผสานกับระบบตรวจจับกล้องพัง
+    function renderCCTV(node) {
+        document.getElementById('ui-cam-title').innerText = `📍 ${node.name} (อ.${node.dist})`;
+        cctvGrid.innerHTML = "";
+        
+        for(let i=0; i<4; i++) {
+            if(node.cams[i] === 1) { 
+                // กล้องปกติ: เรียกผ่านชื่อ Stream ตรงๆ จาก YAML ปลอดภัยร้อยเปอร์เซ็นต์ บังคับโหมด WebRTC ดีเลย์ต่ำสุด
+                cctvGrid.innerHTML += `
+                    <div class="camera-box">
+                        <span class="cam-tag">CAM 0${i+1} - LIVE</span><span class="live-dot"></span>
+                        <iframe class="cam-feed" allow="autoplay; fullscreen" muted 
+                            src="${cloudflareUrl}/stream.html?src=cam${i+1}&mode=webrtc">
+                        </iframe>
+                    </div>`;
+            } else { 
+                // กล้องพัง: สลับไปโชว์หน้าจอ Error แจ้งเตือนเจ้าหน้าที่
+                cctvGrid.innerHTML += `
+                    <div class="camera-box">
+                        <span class="cam-tag" style="background:#e63946;">CAM 0${i+1} FAILURE</span>
+                        <div class="no-signal">NO SIGNAL<br>สัญญาณกล้องขาดหาย</div>
+                    </div>`;
+            }
+        }
+    }
+
+    // เจนหมุดลงแผนที่และแยก Checkbox โซนอำเภอ
+    let currentDistrict = "";
     nodes.forEach(node => {
         var marker = L.marker([node.lat, node.lng], {icon: createIcon(node, 'status')}).addTo(map);
         markerStore[node.id] = { marker: marker, data: node };
 
+        let badge = node.status === 'ok' ? `<span class="badge-status b-ok">🟢 ปกติ</span>` : (node.status === 'warn' ? `<span class="badge-status b-warn">🟡 กล้องขัดข้อง</span>` : `<span class="badge-status b-err">🔴 Node ดับ</span>`);
+
         let popupContent = `
             <div class="popup-custom">
-                <h4>📍 ${node.name}</h4>
+                <h4>${node.name} ${badge}</h4>
                 <div class="popup-grid">
                     <div class="popup-item">🌡️ ${node.temp}°C</div>
                     <div class="popup-item">💧 ${node.hum}%</div>
@@ -272,27 +253,38 @@
             </div>`;
         marker.bindPopup(popupContent);
 
-        let isChecked = (node.id <= 3) ? "checked" : "";
-        zoneContainer.innerHTML += `<label class="zone-label"><input type="checkbox" class="zone-cb" value="${node.id}" ${isChecked}> ${node.name}</label>`;
+        marker.on('click', () => {
+            renderCCTV(node);
+            if(document.getElementById('right-panel').classList.contains('collapsed')) toggleRightPanel();
+        });
+
+        if(currentDistrict !== node.dist) {
+            zoneContainer.innerHTML += `<div style="color:#0d6efd; font-size:12px; margin: 10px 0 5px 0; border-bottom: 1px solid #343a40; font-weight:bold;">อ.${node.dist}</div>`;
+            currentDistrict = node.dist;
+        }
+        
+        let isChecked = (node.status !== 'err') ? "checked" : "disabled"; 
+        let labelColor = (node.status === 'err') ? "#6c757d" : "#ced4da";
+        zoneContainer.innerHTML += `<label class="zone-label" style="color:${labelColor}"><input type="checkbox" class="zone-cb" value="${node.id}" ${isChecked}> ${node.name}</label>`;
     });
 
+    renderCCTV(nodes[0]); // โหลด Node แรกเปิดระบบ
+
+    // เปลี่ยนโหมดเลเยอร์ข้อมูลแผนที่
     function setLayer(type, btn) {
         document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentLayer = type;
-
-        Object.values(markerStore).forEach(item => {
-            item.marker.setIcon(createIcon(item.data, type));
-        });
+        Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, type)); });
     }
 
+    // ปุ่มไมค์กระจายเสียงแบบ Real-time
     function startSpeak() {
         document.querySelector('.btn-mic').style.backgroundColor = "#ffc107"; 
         document.querySelector('.btn-mic').style.color = "#000";
-        document.getElementById('mic-text').innerText = "🔴 กำลังประกาศเสียง...";
-        
+        document.getElementById('mic-text').innerText = "🔴 กำลังส่งสัญญาณประกาศเสียง...";
         document.querySelectorAll('.zone-cb').forEach(cb => {
-            if(cb.checked) markerStore[cb.value].marker.setIcon(speakingIcon);
+            if(cb.checked && !cb.disabled) markerStore[cb.value].marker.setIcon(speakingIcon);
         });
     }
     
@@ -300,12 +292,10 @@
         document.querySelector('.btn-mic').style.backgroundColor = "#dc3545"; 
         document.querySelector('.btn-mic').style.color = "#fff";
         document.getElementById('mic-text').innerText = "กดค้างเพื่อพูด (Push-to-Talk)";
-        
-        Object.values(markerStore).forEach(item => {
-            item.marker.setIcon(createIcon(item.data, currentLayer));
-        });
+        Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, currentLayer)); });
     }
 
+    // สลับหน้าเมนูซ้าย
     function switchPage(pageId, btn) {
         document.getElementById('page-dashboard').style.display = 'none';
         document.querySelectorAll('.page-content').forEach(el => el.style.display = 'none');
