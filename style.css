@@ -71,20 +71,8 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .sensor-item { background: var(--item-hover); padding: 10px; border-radius: 6px; text-align: center; border: 1px solid var(--border-color); }
 .sensor-label { font-size:10px; color:var(--text-muted); }
 .sensor-val { font-size: 20px; font-weight: bold; color: #2ec4b6; margin-top: 5px;}
-
 /*.zone-selector { background: var(--item-hover); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); max-height: 120px; overflow-y: auto;}*/
-.zone-selector { 
-    background: var(--item-hover); 
-    padding: 10px; 
-    border-radius: 6px; 
-    border: 1px solid var(--border-color); 
-    flex: 1;             /* 🌟 เปลี่ยนเป็น flex: 1 เพื่อให้กล่องยืดขยายตามขนาดหน้าต่างอัตโนมัติ */
-    min-height: 120px;   /* 🌟 เปลี่ยนจาก max-height เป็น min-height เพื่อล็อกความสูงเริ่มต้นตอนยังไม่ขยาย */
-    overflow-y: auto;
-}
-
-
-
+.zone-selector   { background: var(--item-hover); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); flex: 1;/* 🌟 เปลี่ยนเป็น flex: 1 เพื่อให้กล่องยืดขยายตามขนาดหน้าต่างอัตโนมัติ */min-height: 120px;   /* 🌟 เปลี่ยนจาก max-height เป็น min-height เพื่อล็อกความสูงเริ่มต้นตอนยังไม่ขยาย */overflow-y: auto;}
 .zone-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-main); margin-bottom: 6px; cursor: pointer;}
 .btn-mic { background: linear-gradient(135deg, #dc3545, #a52834); color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.2s;}
 .alert-item { font-size: 11px; padding: 8px; border-left: 3px solid #ffb703; background: rgba(255, 183, 3, 0.1); margin-bottom: 8px; border-radius: 0 4px 4px 0;}
