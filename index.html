@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart City Command Center - Ratchaburi V9</title>
+    <title>Smart City Command Center - Ratchaburi</title>
+    <!-- โหลดแผนที่ Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- โหลดไฟล์ CSS ของเรา -->
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <header class="main-header">
-    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี (OS: V9 Pro)</h2>
+    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี (OS: V9.1 Pro)</h2>
     <div class="system-status"><span id="clock">12:00:00</span> <span class="badge-ok">🟢 Master Server Online</span></div>
   </header>
 
   <div class="main-layout">
+    <!-- ⬅️ เมนูซ้าย -->
     <nav class="sidebar-menu">
       <button class="menu-item active" onclick="switchPage('dashboard', this)">
         <div class="menu-title">🗺️ แผนที่ & กล้อง (LIVE)</div>
@@ -39,8 +42,10 @@
       </button>
     </nav>
 
-    <div id="page-dashboard" class="page-content" style="display: flex; padding: 0; position: relative;">
-        <div style="flex:1; position: relative; display: flex;">
+    <!-- 🌐 Dashboard Zone (หน้าหลัก) -->
+    <div id="page-dashboard" class="page-content active-page">
+        <!-- โซนแผนที่ -->
+        <div class="map-container">
             <div class="map-layer-controls">
                 <button class="layer-btn active" onclick="setLayer('status', this)">สถานะระบบ</button>
                 <button class="layer-btn" onclick="setLayer('pm25', this)">ฝุ่น PM2.5</button>
@@ -49,9 +54,10 @@
             <div id="map"></div>
         </div>
         
+        <!-- 📹 โซนกล้อง (ล็อก 4 กรอบตายตัวด้านล่าง) -->
         <div class="cctv-bottom-panel">
             <div class="cctv-header">
-                <span>📹 ภาพสดจากกล้องวงจรปิด <span style="color:#2ec4b6; margin-left:10px;" id="cam-count-badge">รอการเลือก...</span></span>
+                <span>📹 ภาพสดจากกล้องวงจรปิด <span style="color:#2ec4b6; margin-left:10px;" id="cam-count-badge">รอการเลือกพื้นที่...</span></span>
                 <span id="ui-cam-title" style="color:#0d6efd;">กรุณาคลิกเลือกจุดติดตั้งบนแผนที่</span>
             </div>
             <div class="cctv-grid" id="cctv-grid">
@@ -62,13 +68,14 @@
             </div>
         </div>
 
+        <!-- 🪟 หน้าต่างลอย 1: ข้อมูลจุดติดตั้ง -->
         <div class="floating-window" id="win-status" style="top: 20px; right: 20px;">
             <div class="win-header" id="drag-status">
                 <span>📍 ข้อมูลจุดติดตั้ง</span>
                 <div class="win-controls">
                     <button onclick="minimizeWindow('win-status')">_</button>
                     <button onclick="maximizeWindow('win-status')">□</button>
-                    <button onclick="closeWindow('win-status')" class="btn-close">✕</button>
+                    <button onclick="closeWindow('win-status')">✕</button>
                 </div>
             </div>
             <div class="win-content">
@@ -82,38 +89,39 @@
             </div>
         </div>
 
+        <!-- 🪟 หน้าต่างลอย 2: ควบคุมเสียง -->
         <div class="floating-window" id="win-audio" style="top: 280px; right: 20px;">
             <div class="win-header" id="drag-audio">
                 <span>📢 แผงควบคุมเสียง</span>
                 <div class="win-controls">
                     <button onclick="minimizeWindow('win-audio')">_</button>
                     <button onclick="maximizeWindow('win-audio')">□</button>
-                    <button onclick="closeWindow('win-audio')" class="btn-close">✕</button>
+                    <button onclick="closeWindow('win-audio')">✕</button>
                 </div>
             </div>
             <div class="win-content">
                 <div class="zone-selector" id="zone-checkboxes"></div>
-                <button class="btn-mic" id="btn-ptt" 
-                    onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()"
-                    ontouchstart="startSpeak(event)" ontouchend="stopSpeak(event)">
+                <button class="btn-mic" id="btn-ptt" onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()" ontouchstart="startSpeak(event)" ontouchend="stopSpeak(event)">
                     🎙️ กดค้างเพื่อพูด (PTT)
                 </button>
             </div>
         </div>
 
+        <!-- 🪟 หน้าต่างลอย 3: AI Alerts -->
         <div class="floating-window" id="win-ai" style="top: 20px; left: 20px;">
             <div class="win-header" id="drag-ai">
                 <span>🤖 AI System Alerts</span>
                 <div class="win-controls">
                     <button onclick="minimizeWindow('win-ai')">_</button>
                     <button onclick="maximizeWindow('win-ai')">□</button>
-                    <button onclick="closeWindow('win-ai')" class="btn-close">✕</button>
+                    <button onclick="closeWindow('win-ai')">✕</button>
                 </div>
             </div>
             <div class="win-content" id="ai-alerts-box"></div>
         </div>
     </div>
 
+    <!-- 📌 หน้าตารางกระจายเสียง -->
     <div id="page-audio" class="page-content">
         <h2 class="page-title">🗓️ ตารางกระจายเสียงอัตโนมัติ (Audio Scheduler)</h2>
         <button class="btn-primary" style="margin-bottom:15px;">+ สร้างตารางเสียงใหม่</button>
@@ -130,18 +138,28 @@
         </table>
     </div>
 
-    <div id="page-stats" class="page-content"><h2 class="page-title">📊 สถิติสิ่งแวดล้อม (Grafana Embed)</h2></div>
+    <!-- 📌 หน้าสถิติ -->
+    <div id="page-stats" class="page-content">
+        <h2 class="page-title">📊 สถิติสิ่งแวดล้อม (Grafana Embed)</h2>
+        <div style="background:var(--table-bg); height:400px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--border-color); border-radius:8px;">
+            <p style="color:var(--text-muted);">พื้นที่สำหรับฝังหน้าจอกราฟจาก InfluxDB / Grafana</p>
+        </div>
+    </div>
     
+    <!-- 📌 หน้าจัดการอุปกรณ์ -->
     <div id="page-devices" class="page-content">
         <h2 class="page-title">⚙️ จัดการอุปกรณ์ 42 Nodes</h2>
-        <table class="styled-table" id="device-table">
-            <thead>
-                <tr><th>อำเภอ</th><th>จุดติดตั้ง</th><th>IP (WireGuard)</th><th>Ping</th><th>สิ่งแวดล้อม</th><th>สถานะกล้อง</th></tr>
-            </thead>
-            <tbody id="device-tbody"></tbody>
-        </table>
+        <div style="max-height: 80%; overflow-y: auto;">
+            <table class="styled-table" id="device-table">
+                <thead>
+                    <tr><th>อำเภอ</th><th>จุดติดตั้ง</th><th>IP (WireGuard)</th><th>Ping</th><th>สิ่งแวดล้อม</th><th>สถานะกล้อง</th></tr>
+                </thead>
+                <tbody id="device-tbody"></tbody>
+            </table>
+        </div>
     </div>
 
+    <!-- 📌 หน้าตั้งค่าระบบ -->
     <div id="page-settings" class="page-content">
         <h2 class="page-title">🛠️ ตั้งค่าระบบและหน้าต่าง (Settings)</h2>
         <div class="settings-grid">
@@ -176,6 +194,7 @@
     </div>
   </div>
 
+  <!-- โหลดสคริปต์ -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
