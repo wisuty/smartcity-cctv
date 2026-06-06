@@ -4,6 +4,7 @@
     --win-bg: rgba(18, 20, 23, 0.85); --win-header: rgba(0,0,0,0.6);
     --box-bg: #000000; --item-hover: #212529; --table-bg: #1a1d20;
 }
+/* 🌟 ค่าสี Light Mode (ทำงานเป็นค่าเริ่มต้น) */
 body.light-theme {
     --bg-main: #f0f2f5; --bg-header: #ffffff; --bg-menu: #ffffff; --bg-panel: #ffffff;
     --text-main: #212529; --text-muted: #6c757d; --border-color: #dee2e6;
@@ -19,13 +20,14 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .badge-ok { background: rgba(46, 196, 182, 0.15); color: #2ec4b6; border: 1px solid #2ec4b6; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size:12px;}
 .main-layout { display: flex; flex: 1; height: calc(100vh - 60px); position: relative;}
 
-/* 🌟 แก้ไขแอนิเมชันและการพับเก็บ Sidebar */
-.sidebar-menu { width: 240px; background-color: var(--bg-menu); border-right: 1px solid var(--border-color); padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; z-index: 10; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; white-space: nowrap; flex-shrink: 0;}
+/* 🌟 แก้บั๊กเมนูรวน: เพิ่ม overflow:hidden ให้ไอเทมข้างใน และรักษาพื้นที่ไอคอน */
+.sidebar-menu { width: 240px; background-color: var(--bg-menu); border-right: 1px solid var(--border-color); padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; z-index: 10; transition: width 0.3s ease; overflow-x: hidden; flex-shrink: 0;}
 .sidebar-menu.collapsed { width: 70px !important; min-width: 70px !important; padding: 15px 5px !important; }
-.sidebar-menu.collapsed .menu-text, .sidebar-menu.collapsed .menu-subdata { display: none !important; }
+.sidebar-menu.collapsed .menu-text, .sidebar-menu.collapsed .menu-subdata { opacity: 0; display: none; }
 .sidebar-menu.collapsed .menu-item { align-items: center; justify-content: center; padding: 12px 0;}
+.sidebar-menu.collapsed .menu-title { font-size: 18px; justify-content: center;}
 
-.menu-item { background: none; border: 1px solid transparent; color: var(--text-muted); padding: 12px 15px; text-align: left; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;}
+.menu-item { background: none; border: 1px solid transparent; color: var(--text-muted); padding: 12px 15px; text-align: left; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; overflow: hidden; white-space: nowrap;}
 .menu-item:hover { background-color: var(--item-hover); border-color: var(--border-color);}
 .menu-item.active { background-color: rgba(13, 110, 253, 0.1); border-color: #0d6efd; color: #0d6efd; }
 .menu-title { font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px;}
@@ -64,7 +66,7 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .win-controls button:hover { color: #0d6efd; }
 .win-content { padding: 15px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto;}
 
-/* Widgets inside Windows */
+/* Widgets */
 .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;}
 .sensor-item { background: var(--item-hover); padding: 10px; border-radius: 6px; text-align: center; border: 1px solid var(--border-color); }
 .sensor-label { font-size:10px; color:var(--text-muted); }
@@ -79,7 +81,6 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .page-title { font-size: 22px; color: var(--text-main); margin-bottom: 20px; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; display: inline-block;}
 .btn-primary { padding: 8px 16px; background:#0d6efd; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;}
 .btn-preset { background: var(--item-hover); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;}
-.btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; }
 .styled-table { width: 100%; border-collapse: collapse; background: var(--table-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);}
 .styled-table thead tr { background-color: var(--bg-menu); color: #0d6efd; text-align: left; }
 .styled-table th, .styled-table td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 13px; color: var(--text-main);}

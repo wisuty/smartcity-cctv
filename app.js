@@ -1,6 +1,5 @@
 const cloudflareUrl = "https://handbags-nitrogen-creator-appointment.trycloudflare.com";
 
-// อัปเดตเวลาเรียลไทม์
 setInterval(() => { 
     const clockEl = document.getElementById('clock');
     if(clockEl) clockEl.innerText = new Date().toLocaleTimeString('th-TH'); 
@@ -12,17 +11,20 @@ let currentLayer = 'status';
 const markerStore = {};
 let zoneContainer;
 
-// 🌟 V10.1 แก้ไขระบบพับเมนูให้เสถียร ไม่ขัดแย้งกับ UI แผนที่
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     if(sidebar) {
         sidebar.classList.toggle('collapsed');
-        // สั่งให้ Leaflet คำนวณขนาดกรอบแผนที่ใหม่ทันทีที่เมนูด้านซ้ายย่อลง
         setTimeout(() => { if (map) map.invalidateSize(); }, 320);
     }
 }
 
-// 🌟 V10.1 ปลดล็อกบั๊กคิวเสียงค้างของเบราว์เซอร์ (Chrome TTS Bug Fix)
+// โหลดข้อมูลเสียงล่วงหน้า (แก้ปัญหา Chrome หาเสียงไม่เจอในรอบแรก)
+window.speechSynthesis.onvoiceschanged = function() {
+    window.speechSynthesis.getVoices();
+};
+
+// 🌟 แก้ปัญหาเสียงเป็นภาษาอังกฤษ
 function testTTS() {
     const textEl = document.getElementById('tts-text');
     if (!textEl) return;
@@ -34,22 +36,25 @@ function testTTS() {
     }
 
     if ('speechSynthesis' in window) {
-        // 🔥 ไม้ตาย: ยกเลิกเสียงที่อาจค้างอยู่ในระบบทั้งหมดก่อนหน้านี้ เพื่อล้างคิวเบราว์เซอร์ให้ว่าง
-        speechSynthesis.cancel();
+        speechSynthesis.cancel(); // ล้างคิวเสียงเก่า
         
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'th-TH'; // กำหนดให้เสียงพูดเป็นภาษาไทย
-        utterance.rate = 1.0;     // ความเร็วปกติ
-        utterance.volume = 1.0;   // ระดับความดังเสียงเต็มที่
-
-        // สั่งให้ระบบสังเคราะห์เสียงทำงานทันที
+        utterance.lang = 'th-TH'; 
+        
+        // ค้นหาเสียงภาษาไทยจากเบราว์เซอร์
+        const voices = window.speechSynthesis.getVoices();
+        const thaiVoice = voices.find(voice => voice.lang.includes('th') || voice.lang.includes('TH'));
+        
+        if (thaiVoice) {
+            utterance.voice = thaiVoice; // ถ้าเจอเสียงคนไทยให้บังคับใช้
+        }
+        
         speechSynthesis.speak(utterance);
     } else {
         alert("เบราว์เซอร์ของท่านไม่รองรับระบบเสียงสังเคราะห์ (TTS) ครับ");
     }
 }
 
-// ฐานข้อมูลจุดติดตั้ง 42 โหนดจำลอง
 const nodes = [
     { id: '1', name: "ทม.ราชบุรี", dist: "เมือง", lat: 13.5350, lng: 99.8190, ip: "10.0.1.10", status: "ok", temp: 34, hum: 55, pm: 25 },
     { id: '2', name: "ต.หน้าเมือง", dist: "เมือง", lat: 13.5400, lng: 99.8250, ip: "10.0.1.11", status: "ok", temp: 33, hum: 58, pm: 28 },
@@ -57,70 +62,24 @@ const nodes = [
     { id: '4', name: "ต.ดอนตะโก", dist: "เมือง", lat: 13.5200, lng: 99.8000, ip: "10.0.1.13", status: "ok", temp: 32, hum: 60, pm: 22 },
     { id: '5', name: "ต.โคกหม้อ", dist: "เมือง", lat: 13.5600, lng: 99.8300, ip: "10.0.1.14", status: "err", temp: "-", hum: "-", pm: "-" },
     { id: '6', name: "ต.พงสวาย", dist: "เมือง", lat: 13.5450, lng: 99.8350, ip: "10.0.1.15", status: "ok", temp: 33, hum: 55, pm: 24 },
-    { id: '7', name: "ทม.บ้านโป่ง", dist: "บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.2.10", status: "warn", temp: 35, hum: 50, pm: 55 },
-    { id: '8', name: "ต.ท่าผา", dist: "บ้านโป่ง", lat: 13.8300, lng: 99.8600, ip: "10.0.2.11", status: "ok", temp: 34, hum: 52, pm: 28 },
-    { id: '9', name: "ต.เบิกไพร", dist: "บ้านโป่ง", lat: 13.8200, lng: 99.8500, ip: "10.0.2.12", status: "ok", temp: 34, hum: 54, pm: 30 },
-    { id: '10', name: "ต.หนองอ้อ", dist: "บ้านโป่ง", lat: 13.7900, lng: 99.8800, ip: "10.0.2.13", status: "ok", temp: 35, hum: 51, pm: 35 },
-    { id: '11', name: "ต.กรับใหญ่", dist: "บ้านโป่ง", lat: 13.8800, lng: 99.8100, ip: "10.0.2.14", status: "ok", temp: 33, hum: 56, pm: 20 },
-    { id: '12', name: "ต.เขาขลุง", dist: "บ้านโป่ง", lat: 13.8900, lng: 99.7800, ip: "10.0.2.15", status: "err", temp: "-", hum: "-", pm: "-" },
-    { id: '13', name: "ทม.โพธาราม", dist: "โพธาราม", lat: 13.6930, lng: 99.8490, ip: "10.0.3.10", status: "ok", temp: 33, hum: 55, pm: 30 },
-    { id: '14', name: "ต.เจ็ดเสมียน", dist: "โพธาราม", lat: 13.6500, lng: 99.8300, ip: "10.0.3.11", status: "ok", temp: 33, hum: 58, pm: 25 },
-    { id: '15', name: "ต.คลองตาคต", dist: "โพธาราม", lat: 13.7050, lng: 99.8550, ip: "10.0.3.12", status: "warn", temp: 34, hum: 54, pm: 45 },
-    { id: '16', name: "ต.บ้านสิงห์", dist: "โพธาราม", lat: 13.6800, lng: 99.8800, ip: "10.0.3.13", status: "ok", temp: 32, hum: 60, pm: 28 },
-    { id: '17', name: "ต.ดอนทราย", dist: "โพธาราม", lat: 13.7200, lng: 99.8200, ip: "10.0.3.14", status: "ok", temp: 33, hum: 57, pm: 29 },
-    { id: '18', name: "ต.ดำเนินสะดวก", dist: "ดำเนินฯ", lat: 13.5180, lng: 99.9320, ip: "10.0.4.10", status: "ok", temp: 34, hum: 65, pm: 22 },
-    { id: '19', name: "ต.ศรีสุราษฎร์", dist: "ดำเนินฯ", lat: 13.4900, lng: 99.9400, ip: "10.0.4.11", status: "ok", temp: 33, hum: 68, pm: 20 },
-    { id: '20', name: "ต.แพงพวย", dist: "ดำเนินฯ", lat: 13.5300, lng: 99.9500, ip: "10.0.4.12", status: "warn", temp: 35, hum: 62, pm: 38 },
-    { id: '21', name: "ต.บัวงาม", dist: "ดำเนินฯ", lat: 13.4800, lng: 99.9100, ip: "10.0.4.13", status: "ok", temp: 33, hum: 64, pm: 24 },
-    { id: '22', name: "ทต.จอมบึง", dist: "จอมบึง", lat: 13.6210, lng: 99.5930, ip: "10.0.5.10", status: "ok", temp: 31, hum: 60, pm: 15 },
-    { id: '23', name: "ต.ด่านทับตะโก", dist: "จอมบึง", lat: 13.6600, lng: 99.5000, ip: "10.0.5.11", status: "warn", temp: 30, hum: 62, pm: 18 },
-    { id: '24', name: "ต.ปากช่อง", dist: "จอมบึง", lat: 13.6400, lng: 99.4500, ip: "10.0.5.12", status: "ok", temp: 29, hum: 65, pm: 12 },
-    { id: '25', name: "ต.แก้มอ้น", dist: "จอมบึง", lat: 13.6800, lng: 99.4200, ip: "10.0.5.13", status: "ok", temp: 30, hum: 61, pm: 14 },
-    { id: '26', name: "ต.สวนผึ้ง", dist: "สวนผึ้ง", lat: 13.5410, lng: 99.3080, ip: "10.0.6.10", status: "ok", temp: 28, hum: 75, pm: 10 },
-    { id: '27', name: "ต.ป่าหวาย", dist: "สวนผึ้ง", lat: 13.5000, lng: 99.4000, ip: "10.0.6.11", status: "err", temp: "-", hum: "-", pm: "-" },
-    { id: '28', name: "ต.ท่าเคย", dist: "สวนผึ้ง", lat: 13.4800, lng: 99.3500, ip: "10.0.6.12", status: "ok", temp: 29, hum: 70, pm: 14 },
-    { id: '29', name: "ต.ตะนาวศรี", dist: "สวนผึ้ง", lat: 13.5100, lng: 99.2500, ip: "10.0.6.13", status: "ok", temp: 27, hum: 78, pm: 8 },
-    { id: '30', name: "ต.บางแพ", dist: "บางแพ", lat: 13.6930, lng: 99.9320, ip: "10.0.7.10", status: "ok", temp: 33, hum: 55, pm: 30 },
-    { id: '31', name: "ต.วังเย็น", dist: "บางแพ", lat: 13.7200, lng: 99.9200, ip: "10.0.7.11", status: "warn", temp: 34, hum: 53, pm: 40 },
-    { id: '32', name: "ต.หัวโพ", dist: "บางแพ", lat: 13.6600, lng: 99.9400, ip: "10.0.7.12", status: "ok", temp: 32, hum: 58, pm: 25 },
-    { id: '33', name: "ทต.ปากท่อ", dist: "ปากท่อ", lat: 13.3720, lng: 99.8430, ip: "10.0.8.10", status: "ok", temp: 32, hum: 58, pm: 18 },
-    { id: '34', name: "ต.ทุ่งหลวง", dist: "ปากท่อ", lat: 13.3000, lng: 99.7800, ip: "10.0.8.11", status: "warn", temp: 33, hum: 55, pm: 35 },
-    { id: '35', name: "ต.วัดยางงาม", dist: "ปากท่อ", lat: 13.3900, lng: 99.8600, ip: "10.0.8.12", status: "ok", temp: 31, hum: 60, pm: 20 },
-    { id: '36', name: "ต.ดอนทราย", dist: "ปากท่อ", lat: 13.3500, lng: 99.8200, ip: "10.0.8.13", status: "ok", temp: 32, hum: 59, pm: 22 },
-    { id: '37', name: "ต.วัดเพลง", dist: "วัดเพลง", lat: 13.4380, lng: 99.8890, ip: "10.0.9.10", status: "ok", temp: 33, hum: 60, pm: 21 },
-    { id: '38', name: "ต.เกาะศาลพระ", dist: "วัดเพลง", lat: 13.4200, lng: 99.8700, ip: "10.0.9.11", status: "ok", temp: 32, hum: 62, pm: 19 },
-    { id: '39', name: "ต.จอมประทัด", dist: "วัดเพลง", lat: 13.4600, lng: 99.8900, ip: "10.0.9.12", status: "ok", temp: 33, hum: 58, pm: 23 },
-    { id: '40', name: "ต.บ้านคา", dist: "บ้านคา", lat: 13.4210, lng: 99.4210, ip: "10.0.10.10", status: "ok", temp: 29, hum: 70, pm: 12 },
-    { id: '41', name: "ต.บ้านบึง", dist: "บ้านคา", lat: 13.4500, lng: 99.4500, ip: "10.0.10.11", status: "warn", temp: 30, hum: 68, pm: 25 },
-    { id: '42', name: "ต.หนองพันจันทร์", dist: "บ้านคา", lat: 13.3900, lng: 99.4800, ip: "10.0.10.12", status: "ok", temp: 28, hum: 72, pm: 10 }
+    { id: '7', name: "ทม.บ้านโป่ง", dist: "บ้านโป่ง", lat: 13.8160, lng: 99.8760, ip: "10.0.2.10", status: "warn", temp: 35, hum: 50, pm: 55 }
 ];
 
-// คำนวณระบบกล้องและสถานะเครือข่ายล่วงหน้า
 let alertHtml = "";
 nodes.forEach(node => {
-    let totalCams = Math.floor(Math.random() * 4) + 1; 
-    node.cams = []; let brokenCount = 0;
-    for(let i=0; i<totalCams; i++) {
-        let isOk = (node.status === 'err') ? 0 : (Math.random() > 0.15 ? 1 : 0);
-        node.cams.push(isOk); if(!isOk) brokenCount++;
-    }
-    node.camSources = [1, 2, 3, 4].sort(() => 0.5 - Math.random());
-    
+    node.cams = [1, 1, 1, 0];
+    node.camSources = [1, 2, 3, 4];
     if(node.status === 'err') alertHtml += `<div class="alert-item danger">🔴 ${node.name} ออฟไลน์</div>`;
-    else if(node.pm > 50) alertHtml += `<div class="alert-item danger">😷 แจ้งเตือนฝุ่น: ${node.name} (${node.pm} µg/m³)</div>`;
-    else if(brokenCount > 0) alertHtml += `<div class="alert-item">📹 กล้องขัดข้อง ${brokenCount} จุด ที่ ${node.name}</div>`;
 });
 
-// 🌟 ย้ายการผูกปุ่มและการตั้งค่า DOM ทั้งหมดมาไว้ในส่วนนี้เพื่อความเสถียร
 document.addEventListener('DOMContentLoaded', () => {
     zoneContainer = document.getElementById('zone-checkboxes');
-    
     if(alertHtml !== "") document.getElementById('ai-alerts-box').innerHTML = alertHtml;
     else document.getElementById('ai-alerts-box').innerHTML = `<div style="text-align:center; color:#2ec4b6;">🟢 ระบบเครือข่ายปกติ 100%</div>`;
 
-    // เรียกเปิดตัวแผนที่ Leaflet 
     map = L.map('map', { zoomControl: false }).setView([13.55, 99.7], 10);
-    mapTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+    // 🌟 เปลี่ยนแผนที่เริ่มต้นเป็นสีสว่าง (Voyager)
+    mapTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
     let currentDistrict = "";
     nodes.forEach(node => {
@@ -139,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { if(map) map.invalidateSize(); }, 400);
     updateDashboardUI(nodes[0]);
 
-    // เปิดการลากหน้าต่างลอย
     makeDraggable('win-status', 'drag-status');
     makeDraggable('win-audio', 'drag-audio');
     makeDraggable('win-ai', 'drag-ai');
@@ -169,7 +127,7 @@ function updateDashboardUI(node) {
     for(let i=0; i<4; i++) {
         if(i < node.cams.length) { 
             if(node.cams[i] === 1) { 
-                cctvGrid.innerHTML += `<div class="camera-box"><span class="cam-tag">CAM 0${i+1}</span><iframe class="cam-feed" allow="autoplay" muted src="${cloudflareUrl}/stream.html?src=cam${node.camSources[i]}&mode=webrtc"></iframe></div>`;
+                cctvGrid.innerHTML += `<div class="camera-box"><span class="cam-tag">CAM 0${i+1}</span><div class="no-signal">STANDBY</div></div>`;
             } else { 
                 cctvGrid.innerHTML += `<div class="camera-box"><span class="cam-tag" style="background:#e63946;">CAM 0${i+1} ERR</span><div class="no-signal" style="color:#e63946;">⚠️ NO SIGNAL</div></div>`;
             }
@@ -209,9 +167,7 @@ function renderDeviceTable() {
     nodes.forEach(n => {
         let ping = n.status === 'err' ? '<span style="color:#e63946">Timeout</span>' : `${Math.floor(Math.random()*10+10)} ms`;
         let sensors = n.status === 'err' ? '-' : `${n.temp}°C / ${n.pm} µg`;
-        let brokenCams = n.cams.filter(c => c === 0).length;
-        let camStatus = n.status === 'err' ? '<span style="color:#e63946">ดับทั้งหมด</span>' : (brokenCams > 0 ? `<span style="color:#ffb703">เสีย ${brokenCams}</span>` : `<span style="color:#2ec4b6">${n.cams.length} ตัว ปกติ</span>`);
-        tbody.innerHTML += `<tr><td>อ.${n.dist}</td><td><b>${n.name}</b></td><td>${n.ip}</td><td>${ping}</td><td>${sensors}</td><td>${camStatus}</td></tr>`;
+        tbody.innerHTML += `<tr><td>อ.${n.dist}</td><td><b>${n.name}</b></td><td>${n.ip}</td><td>${ping}</td><td>${sensors}</td><td>ปกติ</td></tr>`;
     });
 }
 
@@ -235,7 +191,7 @@ function toggleWindowVisibility(id, isVisible) { document.getElementById(id).sty
 function resetWindows() {
     let w1 = document.getElementById('win-status'); w1.style.top = '20px'; w1.style.right = '20px'; w1.style.left = 'auto'; w1.style.display = 'flex'; maximizeWindow('win-status'); document.getElementById('toggle-win-status').checked = true;
     let w2 = document.getElementById('win-audio'); w2.style.top = '280px'; w2.style.right = '20px'; w2.style.left = 'auto'; w2.style.display = 'flex'; maximizeWindow('win-audio'); document.getElementById('toggle-win-audio').checked = true;
-    let w3 = document.getElementById('win-ai'); w3.style.top = '20px'; w3.style.left = '20px'; w3.style.right = 'auto'; w3.style.display = 'flex'; maximizeWindow('win-ai'); document.getElementById('toggle-win-ai').checked = true;
+    let w3 = document.getElementById('win-ai'); w3.style.top = '20px'; w3.style.left = '20px'; w3.style.right = 'auto'; w3.style.display = 'none'; maximizeWindow('win-ai'); document.getElementById('toggle-win-ai').checked = false;
     switchPage('dashboard', document.querySelector('.menu-item'));
 }
 function makeDraggable(winId, headerId) {
