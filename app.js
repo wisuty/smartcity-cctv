@@ -1,35 +1,55 @@
 const cloudflareUrl = "https://handbags-nitrogen-creator-appointment.trycloudflare.com";
-setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
+
+// อัปเดตเวลาเรียลไทม์
+setInterval(() => { 
+    const clockEl = document.getElementById('clock');
+    if(clockEl) clockEl.innerText = new Date().toLocaleTimeString('th-TH'); 
+}, 1000);
 
 let map;
 let mapTileLayer;
 let currentLayer = 'status'; 
 const markerStore = {};
-const zoneContainer = document.getElementById('zone-checkboxes');
+let zoneContainer;
 
-// 🌟 V.10 ฟังก์ชันย่อ-ขยาย Sidebar
+// 🌟 V10.1 แก้ไขระบบพับเมนูให้เสถียร ไม่ขัดแย้งกับ UI แผนที่
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('collapsed');
-    // ต้องสั่งให้แผนที่รีเฟรชขนาดตัวเองหลังจากเมนูหด/ขยายเสร็จ
-    setTimeout(() => {
-        if (map) map.invalidateSize();
-    }, 300);
+    const sidebar = document.getElementById('sidebar');
+    if(sidebar) {
+        sidebar.classList.toggle('collapsed');
+        // สั่งให้ Leaflet คำนวณขนาดกรอบแผนที่ใหม่ทันทีที่เมนูด้านซ้ายย่อลง
+        setTimeout(() => { if (map) map.invalidateSize(); }, 320);
+    }
 }
 
-// 🌟 V.10 ฟังก์ชันทดสอบระบบ TTS (จำลอง)
+// 🌟 V10.1 ปลดล็อกบั๊กคิวเสียงค้างของเบราว์เซอร์ (Chrome TTS Bug Fix)
 function testTTS() {
-    const text = document.getElementById('tts-text').value;
+    const textEl = document.getElementById('tts-text');
+    if (!textEl) return;
+    
+    const text = textEl.value;
     if (!text.trim()) {
         alert("กรุณาพิมพ์ข้อความที่ต้องการประกาศก่อนครับ");
         return;
     }
-    // ใช้ Web Speech API พื้นฐานจำลองการพูดให้ดูสมจริง
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'th-TH';
-    speechSynthesis.speak(utterance);
+
+    if ('speechSynthesis' in window) {
+        // 🔥 ไม้ตาย: ยกเลิกเสียงที่อาจค้างอยู่ในระบบทั้งหมดก่อนหน้านี้ เพื่อล้างคิวเบราว์เซอร์ให้ว่าง
+        speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'th-TH'; // กำหนดให้เสียงพูดเป็นภาษาไทย
+        utterance.rate = 1.0;     // ความเร็วปกติ
+        utterance.volume = 1.0;   // ระดับความดังเสียงเต็มที่
+
+        // สั่งให้ระบบสังเคราะห์เสียงทำงานทันที
+        speechSynthesis.speak(utterance);
+    } else {
+        alert("เบราว์เซอร์ของท่านไม่รองรับระบบเสียงสังเคราะห์ (TTS) ครับ");
+    }
 }
 
-// ฐานข้อมูล 42 จุด (เหมือนเดิม)
+// ฐานข้อมูลจุดติดตั้ง 42 โหนดจำลอง
 const nodes = [
     { id: '1', name: "ทม.ราชบุรี", dist: "เมือง", lat: 13.5350, lng: 99.8190, ip: "10.0.1.10", status: "ok", temp: 34, hum: 55, pm: 25 },
     { id: '2', name: "ต.หน้าเมือง", dist: "เมือง", lat: 13.5400, lng: 99.8250, ip: "10.0.1.11", status: "ok", temp: 33, hum: 58, pm: 28 },
@@ -75,11 +95,8 @@ const nodes = [
     { id: '42', name: "ต.หนองพันจันทร์", dist: "บ้านคา", lat: 13.3900, lng: 99.4800, ip: "10.0.10.12", status: "ok", temp: 28, hum: 72, pm: 10 }
 ];
 
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array;
-}
-
-let aiAlertHtml = "";
+// คำนวณระบบกล้องและสถานะเครือข่ายล่วงหน้า
+let alertHtml = "";
 nodes.forEach(node => {
     let totalCams = Math.floor(Math.random() * 4) + 1; 
     node.cams = []; let brokenCount = 0;
@@ -89,15 +106,19 @@ nodes.forEach(node => {
     }
     node.camSources = [1, 2, 3, 4].sort(() => 0.5 - Math.random());
     
-    if(node.status === 'err') aiAlertHtml += `<div class="alert-item danger">🔴 ${node.name} ออฟไลน์</div>`;
-    else if(node.pm > 50) aiAlertHtml += `<div class="alert-item danger">😷 แจ้งเตือนฝุ่น: ${node.name} (${node.pm} µg/m³)</div>`;
-    else if(brokenCount > 0) aiAlertHtml += `<div class="alert-item">📹 กล้องขัดข้อง ${brokenCount} จุด ที่ ${node.name}</div>`;
+    if(node.status === 'err') alertHtml += `<div class="alert-item danger">🔴 ${node.name} ออฟไลน์</div>`;
+    else if(node.pm > 50) alertHtml += `<div class="alert-item danger">😷 แจ้งเตือนฝุ่น: ${node.name} (${node.pm} µg/m³)</div>`;
+    else if(brokenCount > 0) alertHtml += `<div class="alert-item">📹 กล้องขัดข้อง ${brokenCount} จุด ที่ ${node.name}</div>`;
 });
 
+// 🌟 ย้ายการผูกปุ่มและการตั้งค่า DOM ทั้งหมดมาไว้ในส่วนนี้เพื่อความเสถียร
 document.addEventListener('DOMContentLoaded', () => {
-    if(aiAlertHtml !== "") document.getElementById('ai-alerts-box').innerHTML = aiAlertHtml;
+    zoneContainer = document.getElementById('zone-checkboxes');
+    
+    if(alertHtml !== "") document.getElementById('ai-alerts-box').innerHTML = alertHtml;
     else document.getElementById('ai-alerts-box').innerHTML = `<div style="text-align:center; color:#2ec4b6;">🟢 ระบบเครือข่ายปกติ 100%</div>`;
 
+    // เรียกเปิดตัวแผนที่ Leaflet 
     map = L.map('map', { zoomControl: false }).setView([13.55, 99.7], 10);
     mapTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
@@ -115,9 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
         zoneContainer.innerHTML += `<label class="zone-label"><input type="checkbox" class="zone-cb dist-${node.dist}" value="${node.id}" ${isChecked}> ${node.name}</label>`;
     });
 
-    setTimeout(() => { map.invalidateSize(); }, 500);
+    setTimeout(() => { if(map) map.invalidateSize(); }, 400);
     updateDashboardUI(nodes[0]);
 
+    // เปิดการลากหน้าต่างลอย
     makeDraggable('win-status', 'drag-status');
     makeDraggable('win-audio', 'drag-audio');
     makeDraggable('win-ai', 'drag-ai');
@@ -197,12 +219,12 @@ const btnPtt = document.getElementById('btn-ptt');
 const speakingIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#dc3545; width:22px; height:22px; border-radius:50%; border:2px solid #fff; display:flex; justify-content:center; align-items:center; font-size:10px;'>📢</div>", iconSize: [22, 22], iconAnchor: [11, 11] });
 function startSpeak(e) {
     if(e) e.preventDefault();
-    btnPtt.style.background = "#ffc107"; btnPtt.style.color = "#000"; btnPtt.innerHTML = "🔴 กำลังส่งเสียง...";
+    if(btnPtt) { btnPtt.style.background = "#ffc107"; btnPtt.style.color = "#000"; btnPtt.innerHTML = "🔴 กำลังส่งเสียงประกาศ..."; }
     document.querySelectorAll('.zone-cb').forEach(cb => { if(cb.checked && !cb.disabled) markerStore[cb.value].marker.setIcon(speakingIcon); });
 }
 function stopSpeak(e) {
     if(e) e.preventDefault();
-    btnPtt.style.background = ""; btnPtt.style.color = ""; btnPtt.innerHTML = "🎙️ กดค้างเพื่อพูด (PTT)";
+    if(btnPtt) { btnPtt.style.background = ""; btnPtt.style.color = ""; btnPtt.innerHTML = "🎙️ กดค้างเพื่อพูด (PTT)"; }
     Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, currentLayer)); });
 }
 

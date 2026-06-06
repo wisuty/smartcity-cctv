@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart City Command Center - Ratchaburi V.10</title>
+    <title>Smart City Command Center - Ratchaburi V10.1</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css" />
 </head>
@@ -12,13 +12,12 @@
   <header class="main-header">
     <div style="display:flex; align-items:center; gap:15px;">
         <button class="btn-toggle-menu" onclick="toggleSidebar()">☰</button>
-        <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี (OS: V.10 Pro)</h2>
+        <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี (OS: V10.1)</h2>
     </div>
     <div class="system-status"><span id="clock">12:00:00</span> <span class="badge-ok">🟢 Master Server Online</span></div>
   </header>
 
   <div class="main-layout">
-    <!-- ⬅️ เมนูซ้าย (พับเก็บได้) -->
     <nav class="sidebar-menu" id="sidebar">
       <button class="menu-item active" onclick="switchPage('dashboard', this)">
         <div class="menu-title">🗺️ <span class="menu-text">แผนที่ & กล้อง (LIVE)</span></div>
@@ -43,9 +42,7 @@
       </button>
     </nav>
 
-    <!-- 🌐 Dashboard Zone -->
     <div id="page-dashboard" class="page-content active-page">
-        <!-- แผนที่ -->
         <div class="map-container">
             <div class="map-layer-controls">
                 <button class="layer-btn active" onclick="setLayer('status', this)">สถานะระบบ</button>
@@ -55,7 +52,6 @@
             <div id="map"></div>
         </div>
         
-        <!-- 📹 CCTV -->
         <div class="cctv-bottom-panel">
             <div class="cctv-header">
                 <span>📹 ภาพสดจากกล้องวงจรปิด <span style="color:#2ec4b6; margin-left:10px;" id="cam-count-badge">รอการเลือกพื้นที่...</span></span>
@@ -69,7 +65,6 @@
             </div>
         </div>
 
-        <!-- 🪟 หน้าต่างลอย 1: ข้อมูลจุดติดตั้ง -->
         <div class="floating-window" id="win-status" style="top: 20px; right: 20px;">
             <div class="win-header" id="drag-status">
                 <span>📍 ข้อมูลจุดติดตั้ง</span>
@@ -90,7 +85,6 @@
             </div>
         </div>
 
-        <!-- 🪟 หน้าต่างลอย 2: ควบคุมเสียง -->
         <div class="floating-window" id="win-audio" style="top: 280px; right: 20px;">
             <div class="win-header" id="drag-audio">
                 <span>📢 แผงควบคุมเสียง</span>
@@ -100,7 +94,7 @@
                     <button onclick="closeWindow('win-audio')">✕</button>
                 </div>
             </div>
-            <div class="win-content" style="display: flex; flex-direction: column;">
+            <div class="win-content">
                 <div class="zone-selector" id="zone-checkboxes"></div>
                 <button class="btn-mic" id="btn-ptt" onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()" ontouchstart="startSpeak(event)" ontouchend="stopSpeak(event)">
                     🎙️ กดค้างเพื่อพูด (PTT)
@@ -108,7 +102,6 @@
             </div>
         </div>
 
-        <!-- 🪟 หน้าต่างลอย 3: AI Alerts -->
         <div class="floating-window" id="win-ai" style="top: 20px; left: 20px;">
             <div class="win-header" id="drag-ai">
                 <span>🤖 AI System Alerts</span>
@@ -122,16 +115,13 @@
         </div>
     </div>
 
-    <!-- 📌 V.10 หน้าตารางกระจายเสียง (อัปเกรดใหม่) -->
     <div id="page-audio" class="page-content">
-        <h2 class="page-title">🗓️ ระบบจัดการเสียงประกาศ & Text-to-Speech (V.10)</h2>
-        
-        <!-- TTS Section -->
+        <h2 class="page-title">🗓️ ระบบจัดการเสียงประกาศ & Text-to-Speech (V.10.1)</h2>
         <div class="settings-grid" style="margin-bottom: 25px;">
             <div class="setting-card" style="grid-column: span 2;">
                 <h3 class="setting-title">🗣️ ประกาศเสียงด่วนผ่าน AI (Text-to-Speech)</h3>
                 <div style="display:flex; gap:10px; margin-bottom: 10px;">
-                    <textarea id="tts-text" rows="2" style="flex:1; background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:10px; resize:none;" placeholder="พิมพ์ข้อความที่ต้องการประกาศที่นี่... (เช่น ประกาศเตือนระดับน้ำ)"></textarea>
+                    <textarea id="tts-text" rows="2" style="flex:1; background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:10px; resize:none;" placeholder="พิมพ์ข้อความที่ต้องการประกาศที่นี่... (เช่น ศูนย์บัญชาการแจ้งเตือนค่าฝุ่นละอองเกินมาตรฐานในเขตพื้นที่เมืองราชบุรี)"></textarea>
                     <button class="btn-primary" style="background:#2ec4b6;" onclick="testTTS()">▶️ ทดลองฟัง</button>
                     <button class="btn-primary" style="background:#dc3545;">📢 ประกาศทันที</button>
                 </div>
@@ -144,7 +134,6 @@
             </div>
         </div>
 
-        <!-- Audio Table -->
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:flex-end;">
             <h3 style="color:var(--text-main); font-size:16px;">ตารางกระจายเสียงอัตโนมัติ</h3>
             <button class="btn-primary">+ สร้างตารางใหม่</button>
@@ -154,65 +143,31 @@
                 <tr><th>เวลาเริ่ม</th><th>ไฟล์เสียง (กดเพื่อฟัง)</th><th>พื้นที่เป้าหมาย (Zones)</th><th>วันทำงาน</th><th>ความสำคัญ</th><th>สถานะระบบ</th></tr>
             </thead>
             <tbody>
-                <tr><td>08:00 น.</td><td><button class="btn-icon" title="ทดลองฟัง">🎧</button> 🇹🇭 national_anthem.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><span style="color:#adb5bd;">ปกติ</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
-                <tr><td>12:00 น.</td><td><button class="btn-icon" title="ทดลองฟัง">🎧</button> ⚠️ warning_pm25.wav</td><td>อ.เมือง, อ.บ้านโป่ง</td><td>จันทร์ - ศุกร์</td><td><span style="color:#ffb703; font-weight:bold;">สูง (แทรกคิวได้)</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
-                <tr><td>16:00 น.</td><td><button class="btn-icon" title="ทดลองฟัง">🎧</button> 📢 pr_school_zone.mp3</td><td>เฉพาะเขตโรงเรียน</td><td>จันทร์ - ศุกร์</td><td><span style="color:#adb5bd;">ปกติ</span></td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td></tr>
-                <tr><td>18:00 น.</td><td><button class="btn-icon" title="ทดลองฟัง">🎧</button> 🇹🇭 evening_anthem.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><span style="color:#adb5bd;">ปกติ</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr><td>08:00 น.</td><td><button class="btn-icon">🎧</button> 🇹🇭 national_anthem.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><span>ปกติ</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr><td>12:00 น.</td><td><button class="btn-icon">🎧</button> ⚠️ warning_pm25.wav</td><td>อ.เมือง, อ.บ้านโป่ง</td><td>จันทร์ - ศุกร์</td><td><span style="color:#ffb703; font-weight:bold;">สูง (แทรกคิว)</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr><td>18:00 น.</td><td><button class="btn-icon">🎧</button> 🇹🇭 evening_anthem.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><span>ปกติ</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
             </tbody>
         </table>
     </div>
 
-    <!-- 📌 หน้าสถิติ -->
-    <div id="page-stats" class="page-content">
-        <h2 class="page-title">📊 สถิติสิ่งแวดล้อม (Grafana Embed)</h2>
-        <div style="background:var(--table-bg); height:400px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--border-color); border-radius:8px;">
-            <p style="color:var(--text-muted);">พื้นที่สำหรับฝังหน้าจอกราฟจาก InfluxDB / Grafana</p>
-        </div>
-    </div>
-    
-    <!-- 📌 หน้าจัดการอุปกรณ์ -->
+    <div id="page-stats" class="page-content"><h2 class="page-title">📊 สถิติสิ่งแวดล้อม (Grafana)</h2></div>
     <div id="page-devices" class="page-content">
         <h2 class="page-title">⚙️ จัดการอุปกรณ์ 42 Nodes</h2>
-        <div style="max-height: 80%; overflow-y: auto;">
-            <table class="styled-table" id="device-table">
-                <thead>
-                    <tr><th>อำเภอ</th><th>จุดติดตั้ง</th><th>IP (WireGuard)</th><th>Ping</th><th>สิ่งแวดล้อม</th><th>สถานะกล้อง</th></tr>
-                </thead>
-                <tbody id="device-tbody"></tbody>
-            </table>
-        </div>
+        <table class="styled-table"><thead id="device-thead"><tr><th>อำเภอ</th><th>จุดติดตั้ง</th><th>IP Address</th><th>Ping</th><th>สิ่งแวดล้อม</th><th>สถานะกล้อง</th></tr></thead><tbody id="device-tbody"></tbody></table>
     </div>
-
-    <!-- 📌 หน้าตั้งค่าระบบ -->
     <div id="page-settings" class="page-content">
-        <h2 class="page-title">🛠️ ตั้งค่าระบบและหน้าต่าง (Settings)</h2>
+        <h2 class="page-title">🛠️ ตั้งค่าระบบ (Settings)</h2>
         <div class="settings-grid">
             <div class="setting-card">
-                <h3 class="setting-title">🖥️ การแสดงผล (Appearance)</h3>
-                <div class="setting-row">
-                    <div><b>โหมดสว่าง (Light Mode)</b><div class="setting-desc">เปลี่ยนสีพื้นหลังให้สว่างขึ้น</div></div>
-                    <label class="switch"><input type="checkbox" onchange="toggleTheme(this.checked)"><span class="slider"></span></label>
-                </div>
-                <div class="setting-row">
-                    <div><b>รีเซ็ตหน้าต่างลอย (Reset Position)</b><div class="setting-desc">จัดเรียงหน้าต่างกลับไปที่ค่าเริ่มต้น</div></div>
-                    <button class="btn-primary" onclick="resetWindows()">รีเซ็ตตำแหน่ง</button>
-                </div>
+                <h3 class="setting-title">🖥️ การแสดงผล</h3>
+                <div class="setting-row"><div><b>โหมดสว่าง (Light Mode)</b></div><label class="switch"><input type="checkbox" onchange="toggleTheme(this.checked)"><span class="slider"></span></label></div>
+                <div class="setting-row"><div><b>รีเซ็ตหน้าต่างลอย</b></div><button class="btn-primary" onclick="resetWindows()">รีเซ็ตตำแหน่ง</button></div>
             </div>
-
             <div class="setting-card">
-                <h3 class="setting-title">🪟 การจัดการหน้าต่าง (Window Manager)</h3>
-                <div class="setting-row">
-                    <div><b>หน้าต่างข้อมูลจุดติดตั้ง</b></div>
-                    <label class="switch"><input type="checkbox" id="toggle-win-status" checked onchange="toggleWindowVisibility('win-status', this.checked)"><span class="slider"></span></label>
-                </div>
-                <div class="setting-row">
-                    <div><b>หน้าต่างควบคุมเสียงประกาศ</b></div>
-                    <label class="switch"><input type="checkbox" id="toggle-win-audio" checked onchange="toggleWindowVisibility('win-audio', this.checked)"><span class="slider"></span></label>
-                </div>
-                <div class="setting-row">
-                    <div><b>หน้าต่าง AI แจ้งเตือน</b></div>
-                    <label class="switch"><input type="checkbox" id="toggle-win-ai" checked onchange="toggleWindowVisibility('win-ai', this.checked)"><span class="slider"></span></label>
-                </div>
+                <h3 class="setting-title">🪟 Window Manager</h3>
+                <div class="setting-row"><div>หน้าต่างข้อมูลจุดติดตั้ง</div><label class="switch"><input type="checkbox" id="toggle-win-status" checked onchange="toggleWindowVisibility('win-status', this.checked)"><span class="slider"></span></label></div>
+                <div class="setting-row"><div>หน้าต่างควบคุมเสียง</div><label class="switch"><input type="checkbox" id="toggle-win-audio" checked onchange="toggleWindowVisibility('win-audio', this.checked)"><span class="slider"></span></label></div>
+                <div class="setting-row"><div>หน้าต่าง AI แจ้งเตือน</div><label class="switch"><input type="checkbox" id="toggle-win-ai" checked onchange="toggleWindowVisibility('win-ai', this.checked)"><span class="slider"></span></label></div>
             </div>
         </div>
     </div>
