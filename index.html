@@ -3,48 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart City Command Center - Ratchaburi</title>
-    <!-- โหลดแผนที่ Leaflet -->
+    <title>Smart City Command Center - Ratchaburi V.10</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- โหลดไฟล์ CSS ของเรา -->
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <header class="main-header">
-    <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี (OS: V9.1 Pro)</h2>
+    <div style="display:flex; align-items:center; gap:15px;">
+        <button class="btn-toggle-menu" onclick="toggleSidebar()">☰</button>
+        <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี (OS: V.10 Pro)</h2>
+    </div>
     <div class="system-status"><span id="clock">12:00:00</span> <span class="badge-ok">🟢 Master Server Online</span></div>
   </header>
 
   <div class="main-layout">
-    <!-- ⬅️ เมนูซ้าย -->
-    <nav class="sidebar-menu">
+    <!-- ⬅️ เมนูซ้าย (พับเก็บได้) -->
+    <nav class="sidebar-menu" id="sidebar">
       <button class="menu-item active" onclick="switchPage('dashboard', this)">
-        <div class="menu-title">🗺️ แผนที่ & กล้อง (LIVE)</div>
+        <div class="menu-title">🗺️ <span class="menu-text">แผนที่ & กล้อง (LIVE)</span></div>
         <div class="menu-subdata">42 Nodes | 4 แผงกล้อง</div>
       </button>
       <button class="menu-item" onclick="switchPage('audio', this)">
-        <div class="menu-title">🗓️ ตารางกระจายเสียง</div>
+        <div class="menu-title">🗓️ <span class="menu-text">ตารางกระจายเสียง</span></div>
         <div class="menu-subdata">กำลังทำงาน: 4 รายการ</div>
       </button>
       <button class="menu-item" onclick="switchPage('stats', this)">
-        <div class="menu-title">📊 สถิติสิ่งแวดล้อม</div>
+        <div class="menu-title">📊 <span class="menu-text">สถิติสิ่งแวดล้อม</span></div>
         <div class="menu-subdata">PM2.5 Avg: 32 µg/m³</div>
       </button>
       <button class="menu-item" onclick="switchPage('devices', this, renderDeviceTable)">
-        <div class="menu-title">⚙️ จัดการอุปกรณ์ (Node)</div>
+        <div class="menu-title">⚙️ <span class="menu-text">จัดการอุปกรณ์ (Node)</span></div>
         <div class="menu-subdata">Online: 39 | Offline: 3</div>
       </button>
       <div class="menu-divider"></div>
       <button class="menu-item" onclick="switchPage('settings', this)">
-        <div class="menu-title">🛠️ ตั้งค่าระบบ (Settings)</div>
+        <div class="menu-title">🛠️ <span class="menu-text">ตั้งค่าระบบ (Settings)</span></div>
         <div class="menu-subdata">Windows / Themes</div>
       </button>
     </nav>
 
-    <!-- 🌐 Dashboard Zone (หน้าหลัก) -->
+    <!-- 🌐 Dashboard Zone -->
     <div id="page-dashboard" class="page-content active-page">
-        <!-- โซนแผนที่ -->
+        <!-- แผนที่ -->
         <div class="map-container">
             <div class="map-layer-controls">
                 <button class="layer-btn active" onclick="setLayer('status', this)">สถานะระบบ</button>
@@ -54,7 +55,7 @@
             <div id="map"></div>
         </div>
         
-        <!-- 📹 โซนกล้อง (ล็อก 4 กรอบตายตัวด้านล่าง) -->
+        <!-- 📹 CCTV -->
         <div class="cctv-bottom-panel">
             <div class="cctv-header">
                 <span>📹 ภาพสดจากกล้องวงจรปิด <span style="color:#2ec4b6; margin-left:10px;" id="cam-count-badge">รอการเลือกพื้นที่...</span></span>
@@ -99,7 +100,7 @@
                     <button onclick="closeWindow('win-audio')">✕</button>
                 </div>
             </div>
-            <div class="win-content">
+            <div class="win-content" style="display: flex; flex-direction: column;">
                 <div class="zone-selector" id="zone-checkboxes"></div>
                 <button class="btn-mic" id="btn-ptt" onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()" ontouchstart="startSpeak(event)" ontouchend="stopSpeak(event)">
                     🎙️ กดค้างเพื่อพูด (PTT)
@@ -121,19 +122,42 @@
         </div>
     </div>
 
-    <!-- 📌 หน้าตารางกระจายเสียง -->
+    <!-- 📌 V.10 หน้าตารางกระจายเสียง (อัปเกรดใหม่) -->
     <div id="page-audio" class="page-content">
-        <h2 class="page-title">🗓️ ตารางกระจายเสียงอัตโนมัติ (Audio Scheduler)</h2>
-        <button class="btn-primary" style="margin-bottom:15px;">+ สร้างตารางเสียงใหม่</button>
+        <h2 class="page-title">🗓️ ระบบจัดการเสียงประกาศ & Text-to-Speech (V.10)</h2>
+        
+        <!-- TTS Section -->
+        <div class="settings-grid" style="margin-bottom: 25px;">
+            <div class="setting-card" style="grid-column: span 2;">
+                <h3 class="setting-title">🗣️ ประกาศเสียงด่วนผ่าน AI (Text-to-Speech)</h3>
+                <div style="display:flex; gap:10px; margin-bottom: 10px;">
+                    <textarea id="tts-text" rows="2" style="flex:1; background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:10px; resize:none;" placeholder="พิมพ์ข้อความที่ต้องการประกาศที่นี่... (เช่น ประกาศเตือนระดับน้ำ)"></textarea>
+                    <button class="btn-primary" style="background:#2ec4b6;" onclick="testTTS()">▶️ ทดลองฟัง</button>
+                    <button class="btn-primary" style="background:#dc3545;">📢 ประกาศทันที</button>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap: wrap;">
+                    <span style="font-size:12px; color:var(--text-muted); align-self:center;">เลือกกลุ่มเป้าหมายด่วน (Smart Presets):</span>
+                    <button class="btn-preset">ทั้งหมด 42 Nodes</button>
+                    <button class="btn-preset">เฉพาะเขตเทศบาลเมือง</button>
+                    <button class="btn-preset">พื้นที่เสี่ยงริมน้ำ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Table -->
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:flex-end;">
+            <h3 style="color:var(--text-main); font-size:16px;">ตารางกระจายเสียงอัตโนมัติ</h3>
+            <button class="btn-primary">+ สร้างตารางใหม่</button>
+        </div>
         <table class="styled-table">
             <thead>
-                <tr><th>เวลาเริ่ม</th><th>ไฟล์เสียง / รูปแบบ</th><th>พื้นที่เป้าหมาย (Zones)</th><th>วันทำงาน</th><th>สถานะระบบ</th></tr>
+                <tr><th>เวลาเริ่ม</th><th>ไฟล์เสียง (กดเพื่อฟัง)</th><th>พื้นที่เป้าหมาย (Zones)</th><th>วันทำงาน</th><th>ความสำคัญ</th><th>สถานะระบบ</th></tr>
             </thead>
             <tbody>
-                <tr><td>08:00 น.</td><td>🇹🇭 national_anthem.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
-                <tr><td>12:00 น.</td><td>⚠️ warning_pm25.wav</td><td>อ.บ้านโป่ง, อ.เมือง, อ.โพธาราม</td><td>จันทร์ - ศุกร์</td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
-                <tr><td>16:00 น.</td><td>📢 pr_school_zone.mp3</td><td>อ.เมือง (เฉพาะเขตโรงเรียน)</td><td>จันทร์ - ศุกร์</td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td></tr>
-                <tr><td>18:00 น.</td><td>🇹🇭 national_anthem_evening.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr><td>08:00 น.</td><td><button class="btn-icon" title="ทดลองฟัง">🎧</button> 🇹🇭 national_anthem.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><span style="color:#adb5bd;">ปกติ</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr><td>12:00 น.</td><td><button class="btn-icon" title="ทดลองฟัง">🎧</button> ⚠️ warning_pm25.wav</td><td>อ.เมือง, อ.บ้านโป่ง</td><td>จันทร์ - ศุกร์</td><td><span style="color:#ffb703; font-weight:bold;">สูง (แทรกคิวได้)</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr><td>16:00 น.</td><td><button class="btn-icon" title="ทดลองฟัง">🎧</button> 📢 pr_school_zone.mp3</td><td>เฉพาะเขตโรงเรียน</td><td>จันทร์ - ศุกร์</td><td><span style="color:#adb5bd;">ปกติ</span></td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td></tr>
+                <tr><td>18:00 น.</td><td><button class="btn-icon" title="ทดลองฟัง">🎧</button> 🇹🇭 evening_anthem.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><span style="color:#adb5bd;">ปกติ</span></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
             </tbody>
         </table>
     </div>
@@ -194,7 +218,6 @@
     </div>
   </div>
 
-  <!-- โหลดสคริปต์ -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>

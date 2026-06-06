@@ -14,11 +14,20 @@ body.light-theme {
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
 body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.3s; }
 
-/* Header & Sidebar */
+/* Header & Sidebar V.10 */
 .main-header { background-color: var(--bg-header); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); height: 60px; z-index: 100;}
+.btn-toggle-menu { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); font-size: 18px; cursor: pointer; padding: 4px 10px; border-radius: 6px; transition: 0.2s;}
+.btn-toggle-menu:hover { background: var(--item-hover); }
 .badge-ok { background: rgba(46, 196, 182, 0.15); color: #2ec4b6; border: 1px solid #2ec4b6; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size:12px;}
 .main-layout { display: flex; flex: 1; height: calc(100vh - 60px); position: relative;}
-.sidebar-menu { width: 240px; background-color: var(--bg-menu); border-right: 1px solid var(--border-color); padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; z-index: 10;}
+
+/* 🌟 Sidebar Animation & Collapsed State */
+.sidebar-menu { width: 240px; background-color: var(--bg-menu); border-right: 1px solid var(--border-color); padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; z-index: 10; transition: width 0.3s ease; overflow-x: hidden; white-space: nowrap;}
+.sidebar-menu.collapsed { width: 70px; padding: 15px 5px; }
+.sidebar-menu.collapsed .menu-text, .sidebar-menu.collapsed .menu-subdata { display: none; }
+.sidebar-menu.collapsed .menu-item { align-items: center; justify-content: center; padding: 12px 0;}
+.sidebar-menu.collapsed .menu-title { justify-content: center; font-size: 18px; margin: 0;}
+
 .menu-item { background: none; border: 1px solid transparent; color: var(--text-muted); padding: 12px 15px; text-align: left; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: 0.2s;}
 .menu-item:hover { background-color: var(--item-hover); border-color: var(--border-color);}
 .menu-item.active { background-color: rgba(13, 110, 253, 0.1); border-color: #0d6efd; color: #0d6efd; }
@@ -71,17 +80,21 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .sensor-item { background: var(--item-hover); padding: 10px; border-radius: 6px; text-align: center; border: 1px solid var(--border-color); }
 .sensor-label { font-size:10px; color:var(--text-muted); }
 .sensor-val { font-size: 20px; font-weight: bold; color: #2ec4b6; margin-top: 5px;}
-/*.zone-selector { background: var(--item-hover); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); max-height: 120px; overflow-y: auto;}*/
-.zone-selector   { background: var(--item-hover); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); flex: 1;/* 🌟 เปลี่ยนเป็น flex: 1 เพื่อให้กล่องยืดขยายตามขนาดหน้าต่างอัตโนมัติ */min-height: 120px;   /* 🌟 เปลี่ยนจาก max-height เป็น min-height เพื่อล็อกความสูงเริ่มต้นตอนยังไม่ขยาย */overflow-y: auto;}
+.zone-selector { background: var(--item-hover); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); flex: 1; min-height: 120px; overflow-y: auto;}
 .zone-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-main); margin-bottom: 6px; cursor: pointer;}
-.btn-mic { background: linear-gradient(135deg, #dc3545, #a52834); color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.2s;}
+.btn-mic { background: linear-gradient(135deg, #dc3545, #a52834); color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: auto;}
 .alert-item { font-size: 11px; padding: 8px; border-left: 3px solid #ffb703; background: rgba(255, 183, 3, 0.1); margin-bottom: 8px; border-radius: 0 4px 4px 0;}
 .alert-item.danger { border-color: #e63946; background: rgba(230, 57, 70, 0.1); }
 
-/* Common UI */
+/* Common UI & Audio V.10 Additions */
 .page-title { font-size: 22px; color: var(--text-main); margin-bottom: 20px; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; display: inline-block;}
 .btn-primary { padding: 8px 16px; background:#0d6efd; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer; transition:0.2s;}
-.btn-primary:hover { background:#0b5ed7; }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; transition: transform 0.2s; }
+.btn-icon:hover { transform: scale(1.2); }
+.btn-preset { background: var(--item-hover); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: 0.2s;}
+.btn-preset:hover { border-color: #0d6efd; color: #0d6efd; }
+
 .styled-table { width: 100%; border-collapse: collapse; background: var(--table-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);}
 .styled-table thead tr { background-color: var(--bg-menu); color: #0d6efd; text-align: left; }
 .styled-table th, .styled-table td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 13px; color: var(--text-main);}
@@ -101,6 +114,4 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .slider { background-color: #0d6efd; }
 input:checked + .slider:before { transform: translateX(16px); }
-
-/* Map Markers Fix (ห้ามแก้ส่วนนี้) */
 .custom-div-icon { background: none; border: none; }

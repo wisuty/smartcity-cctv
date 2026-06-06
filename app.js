@@ -1,6 +1,4 @@
 const cloudflareUrl = "https://handbags-nitrogen-creator-appointment.trycloudflare.com";
-
-// ให้เวลาแสดงผลเรียลไทม์
 setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
 
 let map;
@@ -9,7 +7,29 @@ let currentLayer = 'status';
 const markerStore = {};
 const zoneContainer = document.getElementById('zone-checkboxes');
 
-// ข้อมูล 42 จุด ทั่วราชบุรี
+// 🌟 V.10 ฟังก์ชันย่อ-ขยาย Sidebar
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+    // ต้องสั่งให้แผนที่รีเฟรชขนาดตัวเองหลังจากเมนูหด/ขยายเสร็จ
+    setTimeout(() => {
+        if (map) map.invalidateSize();
+    }, 300);
+}
+
+// 🌟 V.10 ฟังก์ชันทดสอบระบบ TTS (จำลอง)
+function testTTS() {
+    const text = document.getElementById('tts-text').value;
+    if (!text.trim()) {
+        alert("กรุณาพิมพ์ข้อความที่ต้องการประกาศก่อนครับ");
+        return;
+    }
+    // ใช้ Web Speech API พื้นฐานจำลองการพูดให้ดูสมจริง
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'th-TH';
+    speechSynthesis.speak(utterance);
+}
+
+// ฐานข้อมูล 42 จุด (เหมือนเดิม)
 const nodes = [
     { id: '1', name: "ทม.ราชบุรี", dist: "เมือง", lat: 13.5350, lng: 99.8190, ip: "10.0.1.10", status: "ok", temp: 34, hum: 55, pm: 25 },
     { id: '2', name: "ต.หน้าเมือง", dist: "เมือง", lat: 13.5400, lng: 99.8250, ip: "10.0.1.11", status: "ok", temp: 33, hum: 58, pm: 28 },
@@ -55,7 +75,10 @@ const nodes = [
     { id: '42', name: "ต.หนองพันจันทร์", dist: "บ้านคา", lat: 13.3900, lng: 99.4800, ip: "10.0.10.12", status: "ok", temp: 28, hum: 72, pm: 10 }
 ];
 
-// เตรียมข้อมูลก่อนแผนที่โหลด
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array;
+}
+
 let aiAlertHtml = "";
 nodes.forEach(node => {
     let totalCams = Math.floor(Math.random() * 4) + 1; 
@@ -71,18 +94,13 @@ nodes.forEach(node => {
     else if(brokenCount > 0) aiAlertHtml += `<div class="alert-item">📹 กล้องขัดข้อง ${brokenCount} จุด ที่ ${node.name}</div>`;
 });
 
-// เริ่มการทำงานหลักเมื่อ HTML โหลดเสร็จทั้งหมด ป้องกันแผนที่บั๊กสีเทา
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // 1. นำข้อมูลแจ้งเตือนลง AI Window
     if(aiAlertHtml !== "") document.getElementById('ai-alerts-box').innerHTML = aiAlertHtml;
     else document.getElementById('ai-alerts-box').innerHTML = `<div style="text-align:center; color:#2ec4b6;">🟢 ระบบเครือข่ายปกติ 100%</div>`;
 
-    // 2. สร้างแผนที่
     map = L.map('map', { zoomControl: false }).setView([13.55, 99.7], 10);
     mapTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-    // 3. ปักหมุด 42 จุด และสร้าง Checkbox
     let currentDistrict = "";
     nodes.forEach(node => {
         var marker = L.marker([node.lat, node.lng], {icon: createIcon(node, 'status')}).addTo(map);
@@ -97,19 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
         zoneContainer.innerHTML += `<label class="zone-label"><input type="checkbox" class="zone-cb dist-${node.dist}" value="${node.id}" ${isChecked}> ${node.name}</label>`;
     });
 
-    // 4. บังคับอัปเดตขนาดแผนที่ และโหลดข้อมูลตำบลแรก
     setTimeout(() => { map.invalidateSize(); }, 500);
     updateDashboardUI(nodes[0]);
 
-    // 5. เปิดระบบลากหน้าต่าง
     makeDraggable('win-status', 'drag-status');
     makeDraggable('win-audio', 'drag-audio');
     makeDraggable('win-ai', 'drag-ai');
 });
 
-// --- ฟังก์ชันช่วยเหลือ (Helpers) ---
-
-// สร้างไอคอนแผนที่ (แก้บั๊กหมุดกระโดดแล้ว)
 function createIcon(node, type) {
     let innerHtml = "";
     if(type === 'status') {
@@ -125,7 +138,6 @@ function createIcon(node, type) {
     return L.divIcon({ className: 'custom-div-icon', html: htmlContent, iconSize: [26, 26], iconAnchor: [13, 13] });
 }
 
-// อัปเดตข้อมูล UI กลางจอและหน้าต่างลอย
 function updateDashboardUI(node) {
     document.getElementById('ui-cam-title').innerText = `📍 ${node.name} (อ.${node.dist})`;
     document.getElementById('cam-count-badge').innerText = `มีกล้องติดตั้ง ${node.cams.length} ตัว`;
@@ -153,7 +165,6 @@ function updateDashboardUI(node) {
     if(node.pm > 50) pmEl.style.color = "#e63946"; else pmEl.style.color = "#2ec4b6";
 }
 
-// เลือกระดับข้อมูลแผนที่
 function setLayer(type, btn) {
     document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -161,19 +172,15 @@ function setLayer(type, btn) {
     Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, type)); });
 }
 
-// นำทางระหว่างเมนูซ้าย
 function switchPage(pageId, btn, callback) {
     document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active-page'));
     document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-    
     document.getElementById('page-' + pageId).classList.add('active-page');
     btn.classList.add('active');
-    
     if(pageId === 'dashboard') { setTimeout(() => map.invalidateSize(), 200); }
     if(callback) callback();
 }
 
-// สร้างตารางข้อมูล
 function renderDeviceTable() {
     const tbody = document.getElementById('device-tbody');
     tbody.innerHTML = "";
@@ -186,7 +193,6 @@ function renderDeviceTable() {
     });
 }
 
-// ระบบไมโครโฟน
 const btnPtt = document.getElementById('btn-ptt');
 const speakingIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#dc3545; width:22px; height:22px; border-radius:50%; border:2px solid #fff; display:flex; justify-content:center; align-items:center; font-size:10px;'>📢</div>", iconSize: [22, 22], iconAnchor: [11, 11] });
 function startSpeak(e) {
@@ -200,7 +206,6 @@ function stopSpeak(e) {
     Object.values(markerStore).forEach(item => { item.marker.setIcon(createIcon(item.data, currentLayer)); });
 }
 
-// ระบบหน้าต่างลอย
 function minimizeWindow(id) { document.getElementById(id).classList.add('minimized'); }
 function maximizeWindow(id) { document.getElementById(id).classList.remove('minimized'); }
 function closeWindow(id) { document.getElementById(id).style.display = 'none'; let toggleBtn = document.getElementById('toggle-' + id); if(toggleBtn) toggleBtn.checked = false; }
@@ -229,7 +234,6 @@ function makeDraggable(winId, headerId) {
     function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
 }
 
-// ธีมหน้าจอ
 function toggleTheme(isLight) {
     if(isLight) {
         document.body.classList.add('light-theme');
