@@ -19,36 +19,23 @@ function toggleSidebar() {
     }
 }
 
-// โหลดข้อมูลเสียงล่วงหน้า (แก้ปัญหา Chrome หาเสียงไม่เจอในรอบแรก)
 window.speechSynthesis.onvoiceschanged = function() {
     window.speechSynthesis.getVoices();
 };
 
-// 🌟 แก้ปัญหาเสียงเป็นภาษาอังกฤษ
 function testTTS() {
     const textEl = document.getElementById('tts-text');
     if (!textEl) return;
-    
     const text = textEl.value;
-    if (!text.trim()) {
-        alert("กรุณาพิมพ์ข้อความที่ต้องการประกาศก่อนครับ");
-        return;
-    }
+    if (!text.trim()) { alert("กรุณาพิมพ์ข้อความที่ต้องการประกาศก่อนครับ"); return; }
 
     if ('speechSynthesis' in window) {
-        speechSynthesis.cancel(); // ล้างคิวเสียงเก่า
-        
+        speechSynthesis.cancel(); 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'th-TH'; 
-        
-        // ค้นหาเสียงภาษาไทยจากเบราว์เซอร์
         const voices = window.speechSynthesis.getVoices();
         const thaiVoice = voices.find(voice => voice.lang.includes('th') || voice.lang.includes('TH'));
-        
-        if (thaiVoice) {
-            utterance.voice = thaiVoice; // ถ้าเจอเสียงคนไทยให้บังคับใช้
-        }
-        
+        if (thaiVoice) utterance.voice = thaiVoice;
         speechSynthesis.speak(utterance);
     } else {
         alert("เบราว์เซอร์ของท่านไม่รองรับระบบเสียงสังเคราะห์ (TTS) ครับ");
@@ -77,9 +64,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if(alertHtml !== "") document.getElementById('ai-alerts-box').innerHTML = alertHtml;
     else document.getElementById('ai-alerts-box').innerHTML = `<div style="text-align:center; color:#2ec4b6;">🟢 ระบบเครือข่ายปกติ 100%</div>`;
 
+    // 🌟 1. ดึงสถานะธีมจริงจากหน้าจอขณะนั้น (ตรวจสอบว่ามี class หรือปุ่มสลับเปิดอยู่หรือไม่)
+    const isLightActive = document.body.classList.contains('light-theme');
+    const themeCheckbox = document.getElementById('theme-checkbox');
+    if(themeCheckbox) {
+        // บังคับให้ปุ่มเปิด-ปิด ตรงกับดีฟอลต์ของหน้าจอ ป้องกัน Edge จำค่าเพี้ยน
+        themeCheckbox.checked = isLightActive;
+    }
+
+    // 🌟 2. เลือก URL แผนที่เริ่มต้นให้ตรงกับสถานะ Light Mode ทันที
+    const defaultTileUrl = isLightActive 
+        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'  // สว่าง
+        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';           // มืด
+
     map = L.map('map', { zoomControl: false }).setView([13.55, 99.7], 10);
-    // 🌟 เปลี่ยนแผนที่เริ่มต้นเป็นสีสว่าง (Voyager)
-    mapTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+    mapTileLayer = L.tileLayer(defaultTileUrl).addTo(map);
 
     let currentDistrict = "";
     nodes.forEach(node => {
@@ -186,7 +185,12 @@ function stopSpeak(e) {
 
 function minimizeWindow(id) { document.getElementById(id).classList.add('minimized'); }
 function maximizeWindow(id) { document.getElementById(id).classList.remove('minimized'); }
-function closeWindow(id) { document.getElementById(id).style.display = 'none'; let toggleBtn = document.getElementById('toggle-' + id); if(toggleBtn) toggleBtn.checked = false; }
+// ปรับฟังก์ชันปิดหน้าต่างให้ซิงค์กับสวิตช์ใน Settings ด้วยครับ
+function closeWindow(id) { 
+    document.getElementById(id).style.display = 'none'; 
+    let toggleBtn = document.getElementById('toggle-' + id); 
+    if(toggleBtn) toggleBtn.checked = false; 
+}
 function toggleWindowVisibility(id, isVisible) { document.getElementById(id).style.display = isVisible ? 'flex' : 'none'; }
 function resetWindows() {
     let w1 = document.getElementById('win-status'); w1.style.top = '20px'; w1.style.right = '20px'; w1.style.left = 'auto'; w1.style.display = 'flex'; maximizeWindow('win-status'); document.getElementById('toggle-win-status').checked = true;
@@ -215,9 +219,9 @@ function makeDraggable(winId, headerId) {
 function toggleTheme(isLight) {
     if(isLight) {
         document.body.classList.add('light-theme');
-        mapTileLayer.setUrl('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png');
+        if(mapTileLayer) mapTileLayer.setUrl('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png');
     } else {
         document.body.classList.remove('light-theme');
-        mapTileLayer.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+        if(mapTileLayer) mapTileLayer.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
     }
 }

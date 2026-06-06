@@ -4,7 +4,6 @@
     --win-bg: rgba(18, 20, 23, 0.85); --win-header: rgba(0,0,0,0.6);
     --box-bg: #000000; --item-hover: #212529; --table-bg: #1a1d20;
 }
-/* 🌟 ค่าสี Light Mode (ทำงานเป็นค่าเริ่มต้น) */
 body.light-theme {
     --bg-main: #f0f2f5; --bg-header: #ffffff; --bg-menu: #ffffff; --bg-panel: #ffffff;
     --text-main: #212529; --text-muted: #6c757d; --border-color: #dee2e6;
@@ -20,7 +19,7 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .badge-ok { background: rgba(46, 196, 182, 0.15); color: #2ec4b6; border: 1px solid #2ec4b6; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size:12px;}
 .main-layout { display: flex; flex: 1; height: calc(100vh - 60px); position: relative;}
 
-/* 🌟 แก้บั๊กเมนูรวน: เพิ่ม overflow:hidden ให้ไอเทมข้างใน และรักษาพื้นที่ไอคอน */
+/* Sidebar Menu */
 .sidebar-menu { width: 240px; background-color: var(--bg-menu); border-right: 1px solid var(--border-color); padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; z-index: 10; transition: width 0.3s ease; overflow-x: hidden; flex-shrink: 0;}
 .sidebar-menu.collapsed { width: 70px !important; min-width: 70px !important; padding: 15px 5px !important; }
 .sidebar-menu.collapsed .menu-text, .sidebar-menu.collapsed .menu-subdata { opacity: 0; display: none; }
@@ -47,8 +46,6 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .cctv-header { color: var(--text-main); font-size: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; font-weight: bold;}
 .cctv-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;}
 .camera-box { background-color: var(--box-bg); border-radius: 8px; border: 1px solid var(--border-color); position: relative; overflow: hidden; height: 100%; width: 100%; aspect-ratio: 16/9;}
-.cam-feed { width: 100%; height: 100%; border: none; object-fit: contain;}
-.cam-tag { position: absolute; top: 6px; left: 6px; background-color: rgba(0,0,0,0.7); padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #fff; z-index: 2;}
 .no-signal { background: var(--box-bg); color: var(--text-muted); font-weight: bold; font-size: 12px; display: flex; align-items: center; justify-content: center; height: 100%; border: 1px dashed var(--text-muted);}
 
 /* Floating Windows */
@@ -66,7 +63,7 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .win-controls button:hover { color: #0d6efd; }
 .win-content { padding: 15px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto;}
 
-/* Widgets */
+/* Inner Elements */
 .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;}
 .sensor-item { background: var(--item-hover); padding: 10px; border-radius: 6px; text-align: center; border: 1px solid var(--border-color); }
 .sensor-label { font-size:10px; color:var(--text-muted); }
