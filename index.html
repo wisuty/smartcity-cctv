@@ -2,176 +2,50 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart City Command Center - Ratchaburi V10.4</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css" />
+    <title>Smart City Command Center - Ratchaburi</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="light-theme">
-
-  <header class="main-header">
-    <div style="display:flex; align-items:center; gap:15px;">
-        <button class="btn-toggle-menu" onclick="toggleSidebar()">☰</button>
-        <h2><span style="font-size: 20px;">🐉</span> ศูนย์บัญชาการ Smart City ราชบุรี (OS: V10.4 Stable)</h2>
-    </div>
-    <div class="system-status"><span id="clock">12:00:00</span> <span class="badge-ok">🟢 Master Server Online</span></div>
-  </header>
-
-  <div class="main-layout">
-    <nav class="sidebar-menu" id="sidebar">
-      <button class="menu-item active" onclick="switchPage('dashboard', this)">
-        <div class="menu-title">🗺️ <span class="menu-text">แผนที่ & กล้อง (LIVE)</span></div>
-        <div class="menu-subdata">42 Nodes | 4 แผงกล้อง</div>
-      </button>
-      <button class="menu-item" onclick="switchPage('audio', this)">
-        <div class="menu-title">🗓️ <span class="menu-text">ตารางกระจายเสียง</span></div>
-        <div class="menu-subdata">กำลังทำงาน: 4 รายการ</div>
-      </button>
-      <button class="menu-item" onclick="switchPage('stats', this)">
-        <div class="menu-title">📊 <span class="menu-text">สถิติสิ่งแวดล้อม</span></div>
-        <div class="menu-subdata">PM2.5 Avg: 32 µg/m³</div>
-      </button>
-      <button class="menu-item" onclick="switchPage('devices', this, renderDeviceTable)">
-        <div class="menu-title">⚙️ <span class="menu-text">จัดการอุปกรณ์ (Node)</span></div>
-        <div class="menu-subdata">Online: 39 | Offline: 3</div>
-      </button>
-      <div class="menu-divider"></div>
-      <button class="menu-item" onclick="switchPage('settings', this)">
-        <div class="menu-title">🛠️ <span class="menu-text">ตั้งค่าระบบ (Settings)</span></div>
-        <div class="menu-subdata">Windows / Themes</div>
-      </button>
-    </nav>
-
-    <div id="page-dashboard" class="page-content active-page">
-        <div class="map-container">
-            <div class="map-layer-controls">
-                <button class="layer-btn active" onclick="setLayer('status', this)">สถานะระบบ</button>
-                <button class="layer-btn" onclick="setLayer('pm25', this)">ฝุ่น PM2.5</button>
-                <button class="layer-btn" onclick="setLayer('temp', this)">ความร้อน</button>
-            </div>
-            <div id="map"></div>
-        </div>
-        
-        <div class="cctv-bottom-panel">
-            <div class="cctv-header">
-                <span>📹 ภาพสดจากกล้องวงจรปิด <span style="color:#2ec4b6; margin-left:10px;" id="cam-count-badge">รอการเลือกพื้นที่...</span></span>
-                <span id="ui-cam-title" style="color:#0d6efd;">กรุณาคลิกเลือกจุดติดตั้งบนแผนที่</span>
-            </div>
-            <div class="cctv-grid" id="cctv-grid">
-                <div class="camera-box"><div class="no-signal">STANDBY</div></div>
-                <div class="camera-box"><div class="no-signal">STANDBY</div></div>
-                <div class="camera-box"><div class="no-signal">STANDBY</div></div>
-                <div class="camera-box"><div class="no-signal">STANDBY</div></div>
-            </div>
-        </div>
-
-        <div class="floating-window" id="win-status" style="top: 20px; right: 20px;">
-            <div class="win-header" id="drag-status">
-                <span>📍 ข้อมูลจุดติดตั้ง</span>
-                <div class="win-controls">
-                    <button onclick="minimizeWindow('win-status')">_</button>
-                    <button onclick="maximizeWindow('win-status')">□</button>
-                    <button onclick="closeWindow('win-status')">✕</button>
-                </div>
-            </div>
-            <div class="win-content">
-                <div style="font-size: 14px; font-weight:bold;" id="ui-node-name">เลือกจุดบนแผนที่</div>
-                <div style="font-size: 11px; color:var(--text-muted); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;" id="ui-vpn-ip">IP: - | Ping: - | สถานะ: -</div>
-                <div class="sensor-grid">
-                    <div class="sensor-item"><div class="sensor-label">🌡️ อุณหภูมิ</div><div class="sensor-val" id="ui-temp">--°C</div></div>
-                    <div class="sensor-item"><div class="sensor-label">💧 ความชื้น</div><div class="sensor-val" id="ui-hum">--%</div></div>
-                    <div class="sensor-item" style="grid-column: span 2;"><div class="sensor-label">😷 ฝุ่น PM2.5</div><div class="sensor-val" id="ui-pm">-- µg/m³</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="floating-window" id="win-audio" style="top: 280px; right: 20px;">
-            <div class="win-header" id="drag-audio">
-                <span>📢 แผงควบคุมเสียง</span>
-                <div class="win-controls">
-                    <button onclick="minimizeWindow('win-audio')">_</button>
-                    <button onclick="maximizeWindow('win-audio')">□</button>
-                    <button onclick="closeWindow('win-audio')">✕</button>
-                </div>
-            </div>
-            <div class="win-content">
-                <div class="zone-selector" id="zone-checkboxes"></div>
-                <button class="btn-mic" id="btn-ptt" onmousedown="startSpeak()" onmouseup="stopSpeak()" onmouseleave="stopSpeak()" ontouchstart="startSpeak(event)" ontouchend="stopSpeak(event)">
-                    🎙️ กดค้างเพื่อพูด (PTT)
-                </button>
-            </div>
-        </div>
-
-        <div class="floating-window" id="win-ai" style="top: 20px; left: 20px; display: none;">
-            <div class="win-header" id="drag-ai">
-                <span>🤖 AI System Alerts</span>
-                <div class="win-controls">
-                    <button onclick="minimizeWindow('win-ai')">_</button>
-                    <button onclick="maximizeWindow('win-ai')">□</button>
-                    <button onclick="closeWindow('win-ai')">✕</button>
-                </div>
-            </div>
-            <div class="win-content" id="ai-alerts-box"></div>
+<body>
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <h2>Login</h2>
+            <div class="input-group"><label>Username</label><input type="text" id="login-username"></div>
+            <div class="input-group"><label>Password</label><input type="password" id="login-password"></div>
+            <div id="login-error" style="color:red; display:none;"></div>
+            <button class="btn-primary" onclick="attemptLogin()">เข้าสู่ระบบ</button>
         </div>
     </div>
 
-    <div id="page-audio" class="page-content">
-        <h2 class="page-title">🗓️ ระบบจัดการเสียงประกาศ & Text-to-Speech</h2>
-        <div class="settings-grid" style="margin-bottom: 25px;">
-            <div class="setting-card" style="grid-column: span 2;">
-                <h3 class="setting-title">🗣️ ประกาศเสียงด่วนผ่าน AI (Text-to-Speech)</h3>
-                <div style="display:flex; gap:10px; margin-bottom: 10px;">
-                    <textarea id="tts-text" rows="2" style="flex:1; background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:10px; resize:none;" placeholder="พิมพ์ข้อความภาษาไทยที่นี่เพื่อทดสอบระบบเสียง AI..."></textarea>
-                    <button class="btn-primary" style="background:#2ec4b6;" onclick="testTTS()">▶️ ทดลองฟัง</button>
-                    <button class="btn-primary" style="background:#dc3545;">📢 ประกาศทันที</button>
-                </div>
-                <div style="display:flex; gap:10px; flex-wrap: wrap;">
-                    <span style="font-size:12px; color:var(--text-muted); align-self:center;">Smart Presets:</span>
-                    <button class="btn-preset">ทั้งหมด 42 Nodes</button>
-                    <button class="btn-preset">เฉพาะเขตเทศบาลเมือง</button>
-                </div>
-            </div>
+    <header class="main-header">
+        <h2>🐉 Smart City ราชบุรี (V11)</h2>
+        <div id="user-profile" style="display: none;">
+            👤 <span id="current-username"></span>
+            <button class="btn-delete" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <nav class="sidebar-menu" id="sidebar">
+            <button class="menu-item active" onclick="switchPage('dashboard', this)">🗺️ Dashboard</button>
+            <button class="menu-item" onclick="switchPage('settings', this)">🛠️ ตั้งค่า</button>
+        </nav>
+
+        <div id="page-dashboard" class="page-content active-page">
+            <div id="ai-alerts-box" style="width:100%;"></div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:flex-end;">
-            <h3 style="color:var(--text-main); font-size:16px;">ตารางกระจายเสียงอัตโนมัติ</h3>
-            <button class="btn-primary">+ สร้างตารางใหม่</button>
-        </div>
-        <table class="styled-table">
-            <thead>
-                <tr><th>เวลาเริ่ม</th><th>ไฟล์เสียง</th><th>พื้นที่เป้าหมาย</th><th>วันทำงาน</th><th>สถานะ</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>08:00 น.</td><td>🇹🇭 national_anthem.mp3</td><td>ทุกโซน (42 Nodes)</td><td>ทุกวัน</td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div id="page-stats" class="page-content"><h2 class="page-title">📊 สถิติสิ่งแวดล้อม (Grafana)</h2></div>
-    <div id="page-devices" class="page-content"><h2 class="page-title">⚙️ จัดการอุปกรณ์ 42 Nodes</h2><table class="styled-table"><thead><tr><th>อำเภอ</th><th>จุดติดตั้ง</th><th>IP Address</th><th>Ping</th><th>สิ่งแวดล้อม</th><th>สถานะกล้อง</th></tr></thead><tbody id="device-tbody"></tbody></table></div>
-    
-    <div id="page-settings" class="page-content">
-        <h2 class="page-title">🛠️ ตั้งค่าระบบ (Settings)</h2>
-        <div class="settings-grid">
-            <div class="setting-card">
-                <h3 class="setting-title">🖥️ การแสดงผล</h3>
-                <div class="setting-row">
-                    <div><b>โหมดสว่าง (Light Mode)</b></div>
-                    <label class="switch"><input type="checkbox" id="theme-checkbox" checked onchange="toggleTheme(this.checked)"><span class="slider"></span></label>
-                </div>
-                <div class="setting-row"><div><b>รีเซ็ตหน้าต่างลอย</b></div><button class="btn-primary" onclick="resetWindows()">รีเซ็ตตำแหน่ง</button></div>
+        <div id="page-users" class="page-content">
+            <h2 class="page-title">👤 จัดการผู้ใช้งาน</h2>
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="new-user-name" placeholder="ชื่อ">
+                <input type="text" id="new-user-id" placeholder="User">
+                <input type="password" id="new-user-pass" placeholder="Pass">
+                <select id="new-user-role"><option value="viewer">Viewer</option><option value="admin">Admin</option></select>
+                <button class="btn-primary" onclick="addUser()">+ เพิ่ม</button>
             </div>
-            <div class="setting-card">
-                <h3 class="setting-title">🪟 Window Manager</h3>
-                <div class="setting-row"><div>หน้าต่างข้อมูลจุดติดตั้ง</div><label class="switch"><input type="checkbox" id="toggle-win-status" checked onchange="toggleWindowVisibility('win-status', this.checked)"><span class="slider"></span></label></div>
-                <div class="setting-row"><div>หน้าต่างควบคุมเสียง</div><label class="switch"><input type="checkbox" id="toggle-win-audio" checked onchange="toggleWindowVisibility('win-audio', this.checked)"><span class="slider"></span></label></div>
-                <div class="setting-row"><div>หน้าต่าง AI แจ้งเตือน</div><label class="switch"><input type="checkbox" id="toggle-win-ai" onchange="toggleWindowVisibility('win-ai', this.checked)"><span class="slider"></span></label></div>
-            </div>
+            <table class="styled-table"><tbody id="user-table-body"></tbody></table>
         </div>
     </div>
-  </div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
