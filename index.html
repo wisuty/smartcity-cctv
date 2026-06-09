@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>Smart City Command Center - Ratchaburi</title>
+    <title>Smart City Command Center - Ratchaburi V11.1</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,13 +12,13 @@
             <h2>Login</h2>
             <div class="input-group"><label>Username</label><input type="text" id="login-username"></div>
             <div class="input-group"><label>Password</label><input type="password" id="login-password"></div>
-            <div id="login-error" style="color:red; display:none;"></div>
+            <div id="login-error" style="color:#e63946; display:none; margin-bottom:10px;"></div>
             <button class="btn-primary" onclick="attemptLogin()">เข้าสู่ระบบ</button>
         </div>
     </div>
 
     <header class="main-header">
-        <h2>🐉 Smart City ราชบุรี (V11)</h2>
+        <h2>🐉 Smart City ราชบุรี (V11.1)</h2>
         <div id="user-profile" style="display: none;">
             👤 <span id="current-username"></span>
             <button class="btn-delete" onclick="logout()">Logout</button>
@@ -27,16 +28,20 @@
     <div class="main-layout">
         <nav class="sidebar-menu" id="sidebar">
             <button class="menu-item active" onclick="switchPage('dashboard', this)">🗺️ Dashboard</button>
-            <button class="menu-item" onclick="switchPage('settings', this)">🛠️ ตั้งค่า</button>
         </nav>
 
         <div id="page-dashboard" class="page-content active-page">
-            <div id="ai-alerts-box" style="width:100%;"></div>
+            <div id="map" style="height:400px; width:100%;"></div>
+            <h3 style="margin-top:20px;">รายการอุปกรณ์</h3>
+            <table class="styled-table">
+                <thead><tr><th>อำเภอ</th><th>จุดติดตั้ง</th><th>สถานะ</th></tr></thead>
+                <tbody id="device-tbody"></tbody>
+            </table>
         </div>
 
         <div id="page-users" class="page-content">
-            <h2 class="page-title">👤 จัดการผู้ใช้งาน</h2>
-            <div style="margin-bottom: 20px;">
+            <h2>👤 จัดการผู้ใช้งาน</h2>
+            <div style="margin-bottom:20px;">
                 <input type="text" id="new-user-name" placeholder="ชื่อ">
                 <input type="text" id="new-user-id" placeholder="User">
                 <input type="password" id="new-user-pass" placeholder="Pass">
@@ -46,6 +51,7 @@
             <table class="styled-table"><tbody id="user-table-body"></tbody></table>
         </div>
     </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
