@@ -1,7 +1,10 @@
+const nodes = [
+    { id: '1', name: "ทม.ราชบุรี", dist: "เมือง", status: "ok" },
+    { id: '2', name: "ทม.บ้านโป่ง", dist: "บ้านโป่ง", status: "warn" }
+];
+
 if (!localStorage.getItem('smartcity_users')) {
-    localStorage.setItem('smartcity_users', JSON.stringify([
-        { username: 'admin', password: '123', role: 'admin', name: 'Admin' }
-    ]));
+    localStorage.setItem('smartcity_users', JSON.stringify([{ username: 'admin', password: '123', role: 'admin', name: 'Admin' }]));
 }
 
 function attemptLogin() {
@@ -20,13 +23,18 @@ function attemptLogin() {
     }
 }
 
+function loadDashboardData() {
+    const tbody = document.getElementById('device-tbody');
+    tbody.innerHTML = nodes.map(n => `<tr><td>${n.dist}</td><td>${n.name}</td><td>${n.status}</td></tr>`).join('');
+}
+
 function applyRoleRestrictions(role) {
     if (role === 'admin') {
         const sidebar = document.getElementById('sidebar');
         const adminBtn = document.createElement('button');
         adminBtn.className = 'menu-item';
         adminBtn.innerHTML = '👤 จัดการผู้ใช้';
-        adminBtn.onclick = () => { switchPage('users', adminBtn); renderUserTable(); };
+        adminBtn.onclick = () => { switchPage('users'); renderUserTable(); };
         sidebar.appendChild(adminBtn);
     }
 }
@@ -34,10 +42,7 @@ function applyRoleRestrictions(role) {
 function renderUserTable() {
     const tbody = document.getElementById('user-table-body');
     const users = JSON.parse(localStorage.getItem('smartcity_users'));
-    tbody.innerHTML = "";
-    users.forEach((u, i) => {
-        tbody.innerHTML += `<tr><td>${u.name}</td><td>${u.username}</td><td>${u.role}</td><td>${u.username !== 'admin' ? `<button class="btn-delete" onclick="deleteUser(${i})">ลบ</button>` : '-'}</td></tr>`;
-    });
+    tbody.innerHTML = users.map((u, i) => `<tr><td>${u.name}</td><td>${u.username}</td><td>${u.role}</td><td>${u.username !== 'admin' ? `<button class="btn-delete" onclick="deleteUser(${i})">ลบ</button>` : '-'}</td></tr>`).join('');
 }
 
 function addUser() {
@@ -54,7 +59,7 @@ function deleteUser(i) {
     renderUserTable();
 }
 
-function switchPage(id, btn) {
+function switchPage(id) {
     document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
     document.getElementById('page-' + id).classList.add('active-page');
 }
@@ -68,5 +73,8 @@ window.onload = () => {
         const user = JSON.parse(localStorage.getItem('smartcity_users')).find(u => u.username === sessionStorage.getItem('currentUsername'));
         document.getElementById('current-username').innerText = user.name;
         applyRoleRestrictions(user.role);
+        loadDashboardData();
+        const map = L.map('map').setView([13.55, 99.7], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
 };
