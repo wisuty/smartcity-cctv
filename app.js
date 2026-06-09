@@ -1,50 +1,48 @@
-// 1. ระบบ Draggable (ทำให้หน้าต่างขยับได้)
+const nodes = [{id:'1',name:"ทม.ราชบุรี",dist:"เมือง",status:"ok"},{id:'2',name:"ทม.บ้านโป่ง",dist:"บ้านโป่ง",status:"err"}];
+
 function dragElement(elmnt) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    elmnt.querySelector('.window-header').onmousedown = dragMouseDown;
-    function dragMouseDown(e) {
-        e.preventDefault();
-        pos3 = e.clientX; pos4 = e.clientY;
-        document.onmouseup = () => document.onmouseup = null;
-        document.onmousemove = e => {
-            pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
-            pos3 = e.clientX; pos4 = e.clientY;
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-        };
+    elmnt.querySelector('.window-header').onmousedown = e => {
+        let pos1 = e.clientX - elmnt.offsetLeft, pos2 = e.clientY - elmnt.offsetTop;
+        document.onmousemove = e => { elmnt.style.top = (e.clientY - pos2) + "px"; elmnt.style.left = (e.clientX - pos1) + "px"; };
+        document.onmouseup = () => document.onmousemove = null;
+    };
+}
+
+function initDashboard() {
+    const tbody = document.getElementById('device-tbody');
+    tbody.innerHTML = nodes.map(n => `<tr><td>${n.dist}</td><td>${n.name}</td><td>${n.status}</td></tr>`).join('');
+    
+    const alertBox = document.getElementById('ai-alerts-box');
+    alertBox.innerHTML = nodes.filter(n => n.status === 'err').map(n => `<p style="color:red;">🔴 ${n.name} ออฟไลน์</p>`).join('');
+    
+    const map = L.map('map').setView([13.55, 99.7], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    dragElement(document.getElementById('draggable-win'));
+}
+
+function attemptLogin() {
+    const user = document.getElementById('login-username').value;
+    const users = JSON.parse(localStorage.getItem('smartcity_users') || '[{"username":"admin","password":"123","role":"admin","name":"Admin"}]');
+    if (users.find(u => u.username === user)) {
+        sessionStorage.setItem('isLoggedIn', 'true');
+        sessionStorage.setItem('currentUsername', user);
+        location.reload();
     }
 }
 
-// 2. ระบบกราฟ (Chart.js)
-function initChart() {
-    const ctx = document.getElementById('pm25Chart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['10:00', '11:00', '12:00', '13:00'],
-            datasets: [{ label: 'PM2.5', data: [12, 19, 3, 5], borderColor: '#0d6efd' }]
-        }
-    });
+function switchPage(id) {
+    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
+    document.getElementById('page-' + id).classList.add('active-page');
 }
 
-// 3. ระบบแผนที่
-function initMap() {
-    const map = L.map('map').setView([13.55, 99.7], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-}
-
-// 4. Initialization
 window.onload = () => {
     if (sessionStorage.getItem('isLoggedIn')) {
         document.getElementById('login-overlay').style.display = 'none';
-        initMap();
-        initChart();
-        dragElement(document.getElementById('dashboard-window'));
+        document.getElementById('user-profile').style.display = 'block';
+        const user = JSON.parse(localStorage.getItem('smartcity_users')).find(u => u.username === sessionStorage.getItem('currentUsername'));
+        if(user.role === 'admin') document.getElementById('admin-menu').style.display = 'block';
+        initDashboard();
     }
 };
 
-function attemptLogin() {
-    // ใส่ Logic เดิมของคุณที่นี่
-    sessionStorage.setItem('isLoggedIn', 'true');
-    location.reload();
-}
+function logout() { sessionStorage.clear(); location.reload(); }
