@@ -1,80 +1,50 @@
-const nodes = [
-    { id: '1', name: "ทม.ราชบุรี", dist: "เมือง", status: "ok" },
-    { id: '2', name: "ทม.บ้านโป่ง", dist: "บ้านโป่ง", status: "warn" }
-];
-
-if (!localStorage.getItem('smartcity_users')) {
-    localStorage.setItem('smartcity_users', JSON.stringify([{ username: 'admin', password: '123', role: 'admin', name: 'Admin' }]));
-}
-
-function attemptLogin() {
-    const user = document.getElementById('login-username').value;
-    const pass = document.getElementById('login-password').value;
-    const users = JSON.parse(localStorage.getItem('smartcity_users'));
-    const found = users.find(u => u.username === user && u.password === pass);
-
-    if (found) {
-        sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('currentUsername', found.username);
-        location.reload();
-    } else {
-        document.getElementById('login-error').style.display = 'block';
-        document.getElementById('login-error').innerText = "รหัสผิด!";
+// 1. ระบบ Draggable (ทำให้หน้าต่างขยับได้)
+function dragElement(elmnt) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    elmnt.querySelector('.window-header').onmousedown = dragMouseDown;
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX; pos4 = e.clientY;
+        document.onmouseup = () => document.onmouseup = null;
+        document.onmousemove = e => {
+            pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+            pos3 = e.clientX; pos4 = e.clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        };
     }
 }
 
-function loadDashboardData() {
-    const tbody = document.getElementById('device-tbody');
-    tbody.innerHTML = nodes.map(n => `<tr><td>${n.dist}</td><td>${n.name}</td><td>${n.status}</td></tr>`).join('');
+// 2. ระบบกราฟ (Chart.js)
+function initChart() {
+    const ctx = document.getElementById('pm25Chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['10:00', '11:00', '12:00', '13:00'],
+            datasets: [{ label: 'PM2.5', data: [12, 19, 3, 5], borderColor: '#0d6efd' }]
+        }
+    });
 }
 
-function applyRoleRestrictions(role) {
-    if (role === 'admin') {
-        const sidebar = document.getElementById('sidebar');
-        const adminBtn = document.createElement('button');
-        adminBtn.className = 'menu-item';
-        adminBtn.innerHTML = '👤 จัดการผู้ใช้';
-        adminBtn.onclick = () => { switchPage('users'); renderUserTable(); };
-        sidebar.appendChild(adminBtn);
-    }
+// 3. ระบบแผนที่
+function initMap() {
+    const map = L.map('map').setView([13.55, 99.7], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 }
 
-function renderUserTable() {
-    const tbody = document.getElementById('user-table-body');
-    const users = JSON.parse(localStorage.getItem('smartcity_users'));
-    tbody.innerHTML = users.map((u, i) => `<tr><td>${u.name}</td><td>${u.username}</td><td>${u.role}</td><td>${u.username !== 'admin' ? `<button class="btn-delete" onclick="deleteUser(${i})">ลบ</button>` : '-'}</td></tr>`).join('');
-}
-
-function addUser() {
-    const users = JSON.parse(localStorage.getItem('smartcity_users'));
-    users.push({ name: document.getElementById('new-user-name').value, username: document.getElementById('new-user-id').value, password: document.getElementById('new-user-pass').value, role: document.getElementById('new-user-role').value });
-    localStorage.setItem('smartcity_users', JSON.stringify(users));
-    renderUserTable();
-}
-
-function deleteUser(i) {
-    const users = JSON.parse(localStorage.getItem('smartcity_users'));
-    users.splice(i, 1);
-    localStorage.setItem('smartcity_users', JSON.stringify(users));
-    renderUserTable();
-}
-
-function switchPage(id) {
-    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
-    document.getElementById('page-' + id).classList.add('active-page');
-}
-
-function logout() { sessionStorage.clear(); location.reload(); }
-
+// 4. Initialization
 window.onload = () => {
     if (sessionStorage.getItem('isLoggedIn')) {
         document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('user-profile').style.display = 'block';
-        const user = JSON.parse(localStorage.getItem('smartcity_users')).find(u => u.username === sessionStorage.getItem('currentUsername'));
-        document.getElementById('current-username').innerText = user.name;
-        applyRoleRestrictions(user.role);
-        loadDashboardData();
-        const map = L.map('map').setView([13.55, 99.7], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        initMap();
+        initChart();
+        dragElement(document.getElementById('dashboard-window'));
     }
 };
+
+function attemptLogin() {
+    // ใส่ Logic เดิมของคุณที่นี่
+    sessionStorage.setItem('isLoggedIn', 'true');
+    location.reload();
+}
