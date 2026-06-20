@@ -1,38 +1,452 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <title>Smart City Ratchaburi V11.2</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="login-overlay" class="login-overlay"><div class="login-box"><h2>Login</h2><input type="text" id="login-username" placeholder="User"><input type="password" id="login-password" placeholder="Pass"><button class="btn-primary" onclick="attemptLogin()">เข้าสู่ระบบ</button></div></div>
-    
-    <header class="main-header">
-        <h2>🐉 Smart City ราชบุรี (Full System)</h2>
-        <div id="user-profile" style="display:none">👤 <span id="current-username"></span> <button onclick="logout()">Logout</button></div>
-    </header>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Summary | โครงการ CCTV ภาครัฐ</title>
 
-    <div class="main-layout">
-        <nav class="sidebar-menu" id="sidebar">
-            <button class="menu-item active" onclick="switchPage('dashboard')">🗺️ Dashboard</button>
-            <button class="menu-item" onclick="switchPage('settings')">⚙️ อุปกรณ์</button>
-            <button class="menu-item" id="admin-menu" style="display:none" onclick="switchPage('users')">👤 จัดการผู้ใช้</button>
-        </nav>
-        
-        <div id="page-dashboard" class="page-content active-page">
-            <div id="map"></div>
-            <div id="draggable-win" class="window"><div class="window-header">🚨 AI Alerts</div><div class="window-body" id="ai-alerts-box"></div></div>
-        </div>
-        
-        <div id="page-settings" class="page-content"><table class="styled-table"><tbody id="device-tbody"></tbody></table></div>
-        <div id="page-users" class="page-content">
-            <div class="user-form"><input type="text" id="new-user-name" placeholder="ชื่อ"><input type="text" id="new-user-id" placeholder="User"><button onclick="addUser()">เพิ่ม</button></div>
-            <table class="styled-table"><tbody id="user-table-body"></tbody></table>
-        </div>
+<style>
+    body{
+        font-family: "Sarabun", Arial, sans-serif;
+        margin:0;
+        background:#f4f6f9;
+        color:#333;
+    }
+
+    .container{
+        max-width:1200px;
+        margin:auto;
+        padding:30px;
+    }
+
+    .hero{
+        background:linear-gradient(135deg,#0F4C81,#1E88E5);
+        color:white;
+        padding:35px;
+        border-radius:20px;
+        margin-bottom:20px;
+    }
+
+    .hero h1{
+        margin:0;
+        font-size:38px;
+    }
+
+    .hero p{
+        margin-top:10px;
+        opacity:0.95;
+    }
+
+    .grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+        gap:15px;
+    }
+
+    .card{
+        background:white;
+        border-radius:16px;
+        padding:20px;
+        box-shadow:0 3px 10px rgba(0,0,0,.08);
+    }
+
+    .metric{
+        text-align:center;
+    }
+
+    .metric .value{
+        font-size:34px;
+        font-weight:bold;
+        color:#0F4C81;
+    }
+
+    h2{
+        color:#0F4C81;
+        margin-top:0;
+    }
+
+    table{
+        width:100%;
+        border-collapse:collapse;
+        margin-top:10px;
+    }
+
+    th{
+        background:#0F4C81;
+        color:white;
+    }
+
+    th,td{
+        border:1px solid #ddd;
+        padding:10px;
+        text-align:center;
+    }
+
+    ul{
+        margin:0;
+        padding-left:20px;
+    }
+
+    li{
+        margin-bottom:8px;
+    }
+
+    .good{
+        color:#2e7d32;
+        font-weight:bold;
+    }
+
+    .warn{
+        color:#e65100;
+        font-weight:bold;
+    }
+
+    .footer{
+        background:#0F4C81;
+        color:white;
+        border-radius:16px;
+        padding:25px;
+        margin-top:20px;
+    }
+
+    .small{
+        font-size:13px;
+        opacity:.85;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="hero">
+
+        <h1>Executive Summary</h1>
+
+        <p>
+            โครงการระบบกล้องวงจรปิดภาครัฐ (อบต./เทศบาล)
+            รูปแบบผู้ร่วมลงทุนเฉพาะราย (Private Project Participation)
+            ภายใต้บริษัทจำกัด
+        </p>
+
     </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+
+    <!-- KPI -->
+    <div class="grid">
+
+        <div class="card metric">
+            <div>มูลค่าสัญญา</div>
+            <div class="value">1.5 ลบ.</div>
+            <small>3 ปี</small>
+        </div>
+
+        <div class="card metric">
+            <div>รายรับสุทธิ</div>
+            <div class="value">1.067 ลบ.</div>
+            <small>หลังหัก VAT 7% + ส่วนลด 15% + สำรอง 10%</small>
+        </div>
+
+        <div class="card metric">
+            <div>เงินร่วมลงทุน</div>
+            <div class="value">700,000</div>
+            <small>บาท</small>
+        </div>
+
+        <div class="card metric">
+            <div>ROI เฉลี่ย</div>
+            <div class="value">12.2%</div>
+            <small>ต่อปี</small>
+        </div>
+
+    </div>
+
+    <br>
+
+    <div class="grid">
+
+        <!-- ภาพรวม -->
+        <div class="card">
+
+            <h2>ภาพรวมโครงการ</h2>
+
+            <ul>
+                <li>กล้องวงจรปิด 28 ตัว</li>
+                <li>9 จุดติดตั้ง พร้อมศูนย์ควบคุม</li>
+                <li>สัญญาให้บริการ 36 เดือน</li>
+                <li>ค่าเช่า 500,000 บาท/ปี</li>
+                <li>มีบริการดูแลและบำรุงรักษา</li>
+            </ul>
+
+        </div>
+
+        <!-- การใช้เงิน -->
+        <div class="card">
+
+            <h2>การใช้เงินลงทุน</h2>
+
+            <table>
+
+                <tr>
+                    <th>รายการ</th>
+                    <th>จำนวน</th>
+                </tr>
+
+                <tr>
+                    <td>ต้นทุนติดตั้งจริง</td>
+                    <td>600,000</td>
+                </tr>
+
+                <tr>
+                    <td>Buffer/เงินสำรอง</td>
+                    <td>1000,000</td>
+                </tr>
+
+                <tr>
+                    <th>รวม</th>
+                    <th>700,000</th>
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <br>
+
+    <!-- คำนวณรายรับ -->
+    <div class="card">
+
+        <h2>โครงสร้างรายรับสุทธิ (ตรวจสอบได้)</h2>
+
+        <table>
+
+            <tr>
+                <th>รายการ</th>
+                <th>จำนวน (บาท)</th>
+            </tr>
+
+            <tr>
+                <td>มูลค่าสัญญา 3 ปี</td>
+                <td>1,500,000</td>
+            </tr>
+
+            <tr>
+                <td>หัก VAT 7%</td>
+                <td>(105,000)</td>
+            </tr>
+
+            <tr>
+                <td>หักส่วนลด 15%</td>
+                <td>(209,250)</td>
+            </tr>
+
+            <tr>
+                <td>หักเงินสำรอง 10%</td>
+                <td>(118,575)</td>
+            </tr>
+
+            <tr>
+                <th>รายรับสุทธิ</th>
+                <th>1,067,175</th>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <br>
+
+    <div class="grid">
+
+        <!-- นักลงทุนหลัก -->
+        <div class="card">
+
+            <h2>นักลงทุนหลัก</h2>
+
+            <table>
+
+                <tr>
+                    <th colspan="2">ลงทุน 700,000 บาท</th>
+                </tr>
+
+                <tr>
+                    <td>คืนเงินต้น</td>
+                    <td>700,000</td>
+                </tr>
+
+                <tr>
+                    <td>กำไรนักลงทุน (70%)</td>
+                    <td>257,023</td>
+                </tr>
+
+                <tr>
+                    <th>รับรวม</th>
+                    <th>957,023</th>
+                </tr>
+
+                <tr>
+                    <th>ROI เฉลี่ย</th>
+                    <th>12.2%/ปี</th>
+                </tr>
+
+            </table>
+
+        </div>
+
+        <!-- นักลงทุนย่อย -->
+        <div class="card">
+
+            <h2>ผู้ร่วมลงทุนเฉพาะราย</h2>
+
+            <table>
+
+                <tr>
+                    <th colspan="2">50,000 บาท/สิทธิ</th>
+                </tr>
+
+                <tr>
+                    <td>คืนเงินต้น</td>
+                    <td>50,000</td>
+                </tr>
+
+                <tr>
+                    <td>กำไรประมาณ</td>
+                    <td>15,736</td>
+                </tr>
+
+                <tr>
+                    <th>รับรวม</th>
+                    <th>65,736</th>
+                </tr>
+
+                <tr>
+                    <th>ROI เฉลี่ย</th>
+                    <th>10.5%/ปี</th>
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <br>
+
+    <!-- กระแสเงินสด -->
+    <div class="card">
+
+        <h2>กระแสเงินสดนักลงทุนหลัก</h2>
+
+        <table>
+
+            <tr>
+                <th>ปี</th>
+                <th>คืนเงินต้น</th>
+                <th>ปันผล</th>
+                <th>รับรวม</th>
+            </tr>
+
+            <tr>
+                <td>ปี 1</td>
+                <td>233,333</td>
+                <td>85,674</td>
+                <td>319,007</td>
+            </tr>
+
+            <tr>
+                <td>ปี 2</td>
+                <td>233,333</td>
+                <td>85,674</td>
+                <td>319,007</td>
+            </tr>
+
+            <tr>
+                <td>ปี 3</td>
+                <td>233,334</td>
+                <td>85,675</td>
+                <td>319,009</td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <br>
+
+    <div class="grid">
+
+        <div class="card">
+
+            <h2>ข้อดี</h2>
+
+            <ul>
+                <li class="good">✓ สัญญาภาครัฐ</li>
+                <li class="good">✓ กระแสเงินสด 36 เดือน</li>
+                <li class="good">✓ ปันผลรายเดือน</li>
+                <li class="good">✓ คืนเงินต้นทุกปี</li>
+                <li class="good">✓ มีทรัพย์สินจริง</li>
+                <li class="good">✓ มีเงินสำรองความเสี่ยง</li>
+            </ul>
+
+        </div>
+
+        <div class="card">
+
+            <h2>ความเสี่ยงที่เปิดเผย</h2>
+
+            <ul>
+                <li class="warn">• รายได้ขึ้นอยู่กับการดำเนินสัญญา</li>
+                <li class="warn">• อาจมีค่าใช้จ่ายฉุกเฉิน</li>
+                <li class="warn">• ผลตอบแทนเป็นประมาณการ</li>
+                <li class="warn">• ไม่ใช่การรับประกันกำไร</li>
+            </ul>
+
+        </div>
+
+    </div>
+
+    <br>
+
+    <div class="card">
+
+        <h2>แนวทางด้านกฎหมาย</h2>
+
+        <ul>
+            <li>ดำเนินการผ่านบริษัทจำกัด</li>
+            <li>รับเฉพาะผู้ร่วมลงทุนที่รู้จักหรือผ่านการคัดเลือก</li>
+            <li>ใช้สัญญาร่วมลงทุนเฉพาะราย</li>
+            <li>ใช้คำว่า "ส่วนแบ่งรายได้ตามโครงการ"</li>
+            <li>หลีกเลี่ยงคำว่า "การันตีกำไร" หรือ "ขายหุ้นโครงการ"</li>
+            <li>ให้ทนายและผู้สอบบัญชีตรวจสอบเอกสารก่อนดำเนินการจริง</li>
+        </ul>
+
+    </div>
+
+    <div class="footer">
+
+        <h2>ข้อเสนอสำหรับผู้ร่วมลงทุน</h2>
+
+        <p>
+            ลงทุนในโครงการระบบกล้องวงจรปิดภาครัฐ
+            ผ่านรูปแบบผู้ร่วมลงทุนเฉพาะราย
+            รับกระแสเงินสดต่อเนื่อง 36 เดือน
+            คืนเงินต้นทุกปี พร้อมประมาณการผลตอบแทนเฉลี่ย
+            <strong>12.2% ต่อปี</strong>
+            ภายใต้โครงสร้างที่โปร่งใส ตรวจสอบได้ และมีการเปิดเผยความเสี่ยงอย่างชัดเจน
+        </p>
+
+        <p class="small">
+            หมายเหตุ: เอกสารนี้เป็นข้อมูลเพื่อประกอบการพิจารณาเบื้องต้น
+            ไม่ใช่การเสนอขายหลักทรัพย์ต่อประชาชนทั่วไป
+            และผลตอบแทนที่แสดงเป็นเพียงประมาณการจากสมมติฐานของโครงการ
+        </p>
+
+    </div>
+
+</div>
+
 </body>
 </html>
